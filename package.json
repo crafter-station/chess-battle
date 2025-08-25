@@ -10,17 +10,29 @@
     "format": "biome format --write"
   },
   "dependencies": {
+    "@electric-sql/react": "^1.0.8",
+    "@neondatabase/serverless": "^1.0.1",
+    "@trigger.dev/sdk": "4.0.1",
+    "ai": "^5.0.22",
+    "chess.js": "^1.4.0",
+    "dotenv": "^17.2.1",
+    "drizzle-orm": "^0.44.4",
+    "nanoid": "^5.1.5",
+    "next": "15.5.0",
     "react": "19.1.0",
     "react-dom": "19.1.0",
-    "next": "15.5.0"
+    "zod": "^4.1.1"
   },
   "devDependencies": {
-    "typescript": "^5",
+    "@biomejs/biome": "2.2.0",
+    "@tailwindcss/postcss": "^4",
+    "@trigger.dev/build": "4.0.1",
+    "@types/bun": "^1.2.20",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "@tailwindcss/postcss": "^4",
+    "drizzle-kit": "^0.31.4",
     "tailwindcss": "^4",
-    "@biomejs/biome": "2.2.0"
+    "typescript": "^5"
   }
 }

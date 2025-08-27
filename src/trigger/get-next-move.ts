@@ -23,9 +23,8 @@ export const GetNextMoveTask = schemaTask({
 
     const generateMoveResult = await generateObject({
       model: playerModelId,
-      schema: z.object({
-        move: z.string(),
-      }),
+      output: "enum",
+      enum: validMoves,
       messages: [
         {
           role: "system",
@@ -43,7 +42,8 @@ AVAILABLE LEGAL MOVES:
 • Consider the position's context and strategy when selecting
 
 RESPONSE FORMAT:
-- Return ONLY the move (e.g., "Nf3", "O-O", "Qxd4")
+- Return the move (e.g., "Nf3", "O-O", "Qxd4")
+- Format is '{"result":"e4"}'
 - Ensure the move is legal and follows chess rules
 - Never leave your king in check unless checkmate is unavoidable`,
         },
@@ -72,7 +72,7 @@ Make your move:`,
     });
 
     return {
-      move: generateMoveResult.object.move,
+      move: generateMoveResult.object,
       tokensIn: generateMoveResult.usage?.inputTokens,
       tokensOut: generateMoveResult.usage?.outputTokens,
     };

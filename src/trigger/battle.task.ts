@@ -38,11 +38,15 @@ export const BattleTask = schemaTask({
 
     const chess = new Chess();
 
-    for (let i = 0; i < 10; i++) {
-      const playerModelId =
-        chess.turn() === "w"
-          ? payload.whitePlayerModelId
-          : payload.blackPlayerModelId;
+    logger.info(
+      `🏁 Starting chess battle: ${payload.whitePlayerModelId} vs ${payload.blackPlayerModelId} (Battle ID: ${battleId})`
+    );
+
+    let lastInvalidMoves: string[] = [];
+
+    while (true) {
+      const moveNumber = Math.floor(chess.history().length / 2) + 1;
+      const currentPlayer = chess.turn() === "w" ? "White" : "Black";
 
       const playerId = chess.turn() === "w" ? whitePlayerId : blackPlayerId;
 
@@ -50,6 +54,7 @@ export const BattleTask = schemaTask({
         board: chess.fen(),
         whitePlayerModelId: payload.whitePlayerModelId,
         blackPlayerModelId: payload.blackPlayerModelId,
+        lastInvalidMoves,
       });
 
       if (!nextMoveResult.ok) {
@@ -61,14 +66,26 @@ export const BattleTask = schemaTask({
       try {
         chess.move(nextMoveResult.output.move);
 
-        logger.info(`${playerModelId} made move ${nextMoveResult.output.move}`);
+        logger.info(
+          `${currentPlayer} (Move ${moveNumber}): ${
+            nextMoveResult.output.move
+          } - Position: ${chess.fen().split(" ")[0]}`
+        );
       } catch (error) {
         if (error instanceof Error && error.message.includes("Invalid move")) {
           logger.error(
-            `Player ${playerModelId} made an invalid move ${nextMoveResult.output.move}, retrying...`
+            `${currentPlayer} (Move ${moveNumber}): ❌ Invalid move "${nextMoveResult.output.move}" - ${error.message}. Retrying...`
           );
+        } else {
           isValid = false;
+          throw error;
         }
+      }
+
+      if (isValid) {
+        lastInvalidMoves = [];
+      } else {
+        lastInvalidMoves = [...lastInvalidMoves, nextMoveResult.output.move];
       }
 
       await db.insert(schema.move).values({
@@ -86,6 +103,28 @@ export const BattleTask = schemaTask({
         break;
       }
     }
+
+    // Log game completion
+    const totalMoves = chess.history().length;
+    let outcome = "Unknown";
+
+    if (chess.isCheckmate()) {
+      outcome = `🏆 ${
+        chess.turn() === "w" ? "Black" : "White"
+      } wins by checkmate!`;
+    } else if (chess.isStalemate()) {
+      outcome = "🤝 Game ended in stalemate";
+    } else if (chess.isDraw()) {
+      outcome = "🤝 Game ended in draw";
+    } else {
+      outcome = "⏰ Game reached move limit (10 moves)";
+    }
+
+    logger.info(
+      `${outcome} Final position: ${
+        chess.fen().split(" ")[0]
+      } (${totalMoves} moves played)`
+    );
 
     return chess.fen();
   },

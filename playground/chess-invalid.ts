@@ -7,6 +7,8 @@ chess.move("e5");
 
 const move = "e6";
 
+console.log(chess.moves());
+
 try {
   chess.move(move);
 } catch (error) {
@@ -14,7 +16,6 @@ try {
 }
 
 console.log(chess.ascii());
-
 
 /* ➜  chess-battle git:(main) ✗ bun run playground/chess-invalid.ts
 Invalid move: e6

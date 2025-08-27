@@ -1,14 +1,15 @@
+"use client";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import BattleSetup from "./battle-setup";
-import { db } from "@/db";
-import { desc } from "drizzle-orm";
-import * as schema from "@/db/schema";
+import type * as schema from "@/db/schema";
 import { formatModelName, formatDate } from "@/lib/utils";
 import Link from "next/link";
+import { useShape } from "@electric-sql/react";
 
-export default async function Page() {
-  const battles = await db.query.battle.findMany({
-    orderBy: [desc(schema.battle.createdAt)],
+export default function Page() {
+  const { data: battles } = useShape<schema.BattleSelect>({
+    url: `${process.env.NEXT_PUBLIC_URL}/api/shapes/battles`,
   });
 
   return (
@@ -63,7 +64,7 @@ export default async function Page() {
                                   WHITE
                                 </div>
                                 <div className="terminal-text font-mono text-sm">
-                                  {formatModelName(battle.whitePlayerModelId)}
+                                  {formatModelName(battle.white_player_id)}
                                 </div>
                               </div>
                             </div>
@@ -81,7 +82,7 @@ export default async function Page() {
                                   BLACK
                                 </div>
                                 <div className="terminal-text font-mono text-sm">
-                                  {formatModelName(battle.blackPlayerModelId)}
+                                  {formatModelName(battle.black_player_id)}
                                 </div>
                               </div>
                             </div>
@@ -90,7 +91,7 @@ export default async function Page() {
                           {/* Date and Battle ID */}
                           <div className="text-right">
                             <div className="terminal-text text-xs opacity-70">
-                              {formatDate(battle.createdAt)}
+                              {formatDate(battle.created_at)}
                             </div>
                             <div className="terminal-text text-xs font-mono mt-1">
                               ID: {battle.id.slice(0, 8)}...

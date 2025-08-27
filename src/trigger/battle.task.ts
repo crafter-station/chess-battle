@@ -12,27 +12,31 @@ export const BattleTask = schemaTask({
   id: "battle",
   schema: z.object({
     battleId: z.string(),
+    userId: z.string(),
     whitePlayerModelId: z.string(),
     blackPlayerModelId: z.string(),
   }),
   run: async (payload) => {
-    await db.insert(schema.battle).values({
-      id: payload.battleId,
-      whitePlayerModelId: payload.whitePlayerModelId,
-      blackPlayerModelId: payload.blackPlayerModelId,
-    });
-
     const whitePlayerId = nanoid();
     const blackPlayerId = nanoid();
 
     await db.insert(schema.player).values({
       id: whitePlayerId,
-      modelId: payload.whitePlayerModelId,
+      model_id: payload.whitePlayerModelId,
+      user_id: payload.userId,
     });
 
     await db.insert(schema.player).values({
       id: blackPlayerId,
-      modelId: payload.blackPlayerModelId,
+      model_id: payload.blackPlayerModelId,
+      user_id: payload.userId,
+    });
+
+    await db.insert(schema.battle).values({
+      id: payload.battleId,
+      white_player_id: whitePlayerId,
+      black_player_id: blackPlayerId,
+      user_id: payload.userId,
     });
 
     const chess = new Chess();
@@ -89,13 +93,14 @@ export const BattleTask = schemaTask({
 
       await db.insert(schema.move).values({
         id: nanoid(),
-        battleId: payload.battleId,
-        playerId,
+        battle_d: payload.battleId,
+        user_id: payload.userId,
+        player_id: playerId,
         move: nextMoveResult.output.move,
         state: chess.fen(),
-        isValid,
-        tokensIn: nextMoveResult.output.tokensIn,
-        tokensOut: nextMoveResult.output.tokensOut,
+        is_valid: isValid,
+        tokens_in: nextMoveResult.output.tokensIn,
+        tokens_out: nextMoveResult.output.tokensOut,
       });
 
       if (chess.isGameOver()) {

@@ -1,5 +1,6 @@
 "use server";
 
+import { getUser } from "@/lib/get-user";
 import { nanoid } from "@/lib/nanoid";
 import { BattleTask } from "@/trigger/battle.task";
 
@@ -40,8 +41,11 @@ export async function StartBattleAction(
 
     const battleId = nanoid();
 
+    const userId = await getUser();
+
     await BattleTask.trigger({
       battleId,
+      userId,
       whitePlayerModelId: input.whitePlayerModelId,
       blackPlayerModelId: input.blackPlayerModelId,
     });

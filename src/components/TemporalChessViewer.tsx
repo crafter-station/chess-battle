@@ -7,25 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-
-interface Move extends Record<string, unknown> {
-  id: string;
-  battle_id: string;
-  player_id: string;
-  state: string;
-  move: string;
-  is_valid: boolean;
-  tokens_in?: number;
-  tokens_out?: number;
-  created_at: string;
-}
-
-interface Battle extends Record<string, unknown> {
-  id: string;
-  white_player_model_id: string;
-  black_player_model_id: string;
-  created_at: string;
-}
+import type * as schema from "@/db/schema";
 
 interface TemporalChessViewerProps {
   battleId: string;
@@ -35,33 +17,26 @@ export default function TemporalChessViewer({
   battleId,
 }: TemporalChessViewerProps) {
   const [currentMoveIndex, setCurrentMoveIndex] = useState(0);
-  const [moves, setMoves] = useState<Move[]>([]);
-  const [battle, setBattle] = useState<Battle | null>(null);
+  const [moves, setMoves] = useState<schema.MoveSelect[]>([]);
+  const [battle, setBattle] = useState<schema.BattleSelect | null>(null);
 
-  const SOURCE_ID = process.env.NEXT_PUBLIC_ELECTRIC_SOURCE_ID;
-  const SECRET = process.env.NEXT_PUBLIC_ELECTRIC_SECRET;
+  const { isLoading: movesLoading, data: movesData } =
+    useShape<schema.MoveSelect>({
+      url: `${process.env.NEXT_PUBLIC_URL}/api/shapes/battles/${battleId}/moves`,
+    });
 
-  const { isLoading: movesLoading, data: movesData } = useShape<Move>({
-    url: `https://api.electric-sql.cloud/v1/shape?source_id=${SOURCE_ID}&secret=${SECRET}`,
-    params: {
-      table: "move",
-      orderBy: "created_at",
-      sort: "asc", // chronological order
-      where: `battle_id = '${battleId}'`,
-      columns: ["id", "battle_id", "player_id", "state", "move", "is_valid", "tokens_in", "tokens_out", "created_at"],
-    },
+  const { isLoading: battleLoading, data: battleData } =
+    useShape<schema.BattleSelect>({
+      url: `${process.env.NEXT_PUBLIC_URL}/api/shapes/battles/${battleId}`,
+    });
+
+  const { data: whitePlayerData } = useShape<schema.PlayerSelect>({
+    url: `${process.env.NEXT_PUBLIC_URL}/api/shapes/players/${battleData?.[0]?.white_player_id}`,
   });
 
-  const { isLoading: battleLoading, data: battleData } = useShape<Battle>({
-    url: `https://api.electric-sql.cloud/v1/shape?source_id=${SOURCE_ID}&secret=${SECRET}`,
-    params: {
-      table: "battle",
-      where: `id = '${battleId}'`,
-      columns: ["id", "white_player_model_id", "black_player_model_id", "created_at"],
-    },
+  const { data: blackPlayerData } = useShape<schema.PlayerSelect>({
+    url: `${process.env.NEXT_PUBLIC_URL}/api/shapes/players/${battleData?.[0]?.black_player_id}`,
   });
-
-
 
   useEffect(() => {
     if (movesData && movesData.length > 0) {
@@ -97,27 +72,27 @@ export default function TemporalChessViewer({
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       switch (event.key) {
-        case 'ArrowLeft':
+        case "ArrowLeft":
           event.preventDefault();
           goToPreviousMove();
           break;
-        case 'ArrowRight':
+        case "ArrowRight":
           event.preventDefault();
           goToNextMove();
           break;
-        case 'ArrowUp':
+        case "ArrowUp":
           event.preventDefault();
           goToStart();
           break;
-        case 'ArrowDown':
+        case "ArrowDown":
           event.preventDefault();
           goToEnd();
           break;
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, [goToPreviousMove, goToNextMove, goToStart, goToEnd]);
 
   const isLoading = movesLoading || battleLoading;
@@ -125,7 +100,9 @@ export default function TemporalChessViewer({
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-96 terminal-card rounded-lg">
-        <div className="terminal-text text-lg terminal-glow">Loading battle data...</div>
+        <div className="terminal-text text-lg terminal-glow">
+          Loading battle data...
+        </div>
       </div>
     );
   }
@@ -166,11 +143,14 @@ export default function TemporalChessViewer({
           <Card className="terminal-card terminal-border">
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
-                <Badge variant={currentMoveIndex % 2 === 0 ? "default" : "secondary"} className="terminal-text">
+                <Badge
+                  variant={currentMoveIndex % 2 === 0 ? "default" : "secondary"}
+                  className="terminal-text"
+                >
                   WHITE
                 </Badge>
                 <span className="terminal-text font-mono text-sm">
-                  {battle.white_player_model_id}
+                  {whitePlayerData?.[0]?.model_id}
                 </span>
               </div>
             </CardContent>
@@ -179,11 +159,14 @@ export default function TemporalChessViewer({
           <Card className="terminal-card terminal-border">
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
-                <Badge variant={currentMoveIndex % 2 === 1 ? "default" : "secondary"} className="terminal-text">
+                <Badge
+                  variant={currentMoveIndex % 2 === 1 ? "default" : "secondary"}
+                  className="terminal-text"
+                >
                   BLACK
                 </Badge>
                 <span className="terminal-text font-mono text-sm">
-                  {battle.black_player_model_id}
+                  {blackPlayerData?.[0]?.model_id}
                 </span>
               </div>
             </CardContent>
@@ -212,12 +195,14 @@ export default function TemporalChessViewer({
             {/* Current Move Info */}
             <Card className="terminal-card terminal-border">
               <CardHeader>
-                <CardTitle className="terminal-text text-sm">CURRENT_MOVE</CardTitle>
+                <CardTitle className="terminal-text text-sm">
+                  CURRENT_MOVE
+                </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="text-center">
                   <div className="terminal-text text-xl terminal-glow">
-                    MOVE_{moveNumber.toString().padStart(2, '0')}
+                    MOVE_{moveNumber.toString().padStart(2, "0")}
                   </div>
                   <div className="terminal-text text-sm opacity-80">
                     {playerColor}_PLAYER
@@ -227,14 +212,21 @@ export default function TemporalChessViewer({
                 <div className="space-y-2 font-mono text-xs">
                   <div className="flex justify-between">
                     <span className="terminal-text opacity-70">COMMAND:</span>
-                    <Badge variant={currentMove.is_valid ? "default" : "destructive"} className="terminal-text">
+                    <Badge
+                      variant={currentMove.is_valid ? "default" : "destructive"}
+                      className="terminal-text"
+                    >
                       {currentMove.move}
                     </Badge>
                   </div>
                   <div className="flex justify-between">
                     <span className="terminal-text opacity-70">STATUS:</span>
-                    <span className={`terminal-text ${currentMove.is_valid ? 'text-green-400' : 'text-red-400'}`}>
-                      {currentMove.is_valid ? 'VALID' : 'INVALID'}
+                    <span
+                      className={`terminal-text ${
+                        currentMove.is_valid ? "text-green-400" : "text-red-400"
+                      }`}
+                    >
+                      {currentMove.is_valid ? "VALID" : "INVALID"}
                     </span>
                   </div>
                   <div className="flex justify-between">
@@ -245,14 +237,22 @@ export default function TemporalChessViewer({
                   </div>
                   {currentMove.tokens_in && (
                     <div className="flex justify-between">
-                      <span className="terminal-text opacity-70">TOKENS_IN:</span>
-                      <span className="terminal-text">{currentMove.tokens_in}</span>
+                      <span className="terminal-text opacity-70">
+                        TOKENS_IN:
+                      </span>
+                      <span className="terminal-text">
+                        {currentMove.tokens_in}
+                      </span>
                     </div>
                   )}
                   {currentMove.tokens_out && (
                     <div className="flex justify-between">
-                      <span className="terminal-text opacity-70">TOKENS_OUT:</span>
-                      <span className="terminal-text">{currentMove.tokens_out}</span>
+                      <span className="terminal-text opacity-70">
+                        TOKENS_OUT:
+                      </span>
+                      <span className="terminal-text">
+                        {currentMove.tokens_out}
+                      </span>
                     </div>
                   )}
                 </div>
@@ -262,7 +262,9 @@ export default function TemporalChessViewer({
             {/* Navigation Controls */}
             <Card className="terminal-card terminal-border">
               <CardHeader>
-                <CardTitle className="terminal-text text-sm">NAVIGATION</CardTitle>
+                <CardTitle className="terminal-text text-sm">
+                  NAVIGATION
+                </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-2 gap-2">
@@ -303,7 +305,7 @@ export default function TemporalChessViewer({
                 <div className="space-y-2">
                   <div className="flex justify-between text-xs terminal-text opacity-70">
                     <span>POS: 001</span>
-                    <span>END: {moves.length.toString().padStart(3, '0')}</span>
+                    <span>END: {moves.length.toString().padStart(3, "0")}</span>
                   </div>
                   <Progress value={progressPercentage} className="h-2" />
                 </div>
@@ -317,7 +319,9 @@ export default function TemporalChessViewer({
             {/* Move History */}
             <Card className="terminal-card terminal-border">
               <CardHeader>
-                <CardTitle className="terminal-text text-sm">MOVE_LOG</CardTitle>
+                <CardTitle className="terminal-text text-sm">
+                  MOVE_LOG
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="max-h-64 overflow-y-auto space-y-1 font-mono text-xs">
@@ -328,13 +332,13 @@ export default function TemporalChessViewer({
                       onClick={() => setCurrentMoveIndex(index)}
                       className={`w-full text-left p-2 rounded terminal-border transition-colors ${
                         index === currentMoveIndex
-                          ? 'terminal-button'
-                          : 'hover:bg-secondary/20 terminal-text'
+                          ? "terminal-button"
+                          : "hover:bg-secondary/20 terminal-text"
                       }`}
                     >
                       <span className="opacity-70">
                         {Math.floor(index / 2) + 1}
-                        {index % 2 === 0 ? '.' : '...'}
+                        {index % 2 === 0 ? "." : "..."}
                       </span>
                       <span className="ml-2">{move.move}</span>
                       {!move.is_valid && (

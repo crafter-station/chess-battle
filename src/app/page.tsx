@@ -1,19 +1,15 @@
-"use client";
-
-import { useState } from "react";
-import TemporalChessViewer from "@/components/TemporalChessViewer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import BattleSetup from "./battle-setup";
+import { db } from "@/db";
+import { desc } from "drizzle-orm";
+import * as schema from "@/db/schema";
+import { formatModelName, formatDate } from "@/lib/utils";
+import Link from "next/link";
 
-export default function Page() {
-  const [battleId, setBattleId] = useState("g739vc4e7j");
-  const [inputValue, setInputValue] = useState("g739vc4e7j");
-
-  const handleLoadBattle = () => {
-    setBattleId(inputValue);
-  };
+export default async function Page() {
+  const battles = await db.query.battle.findMany({
+    orderBy: [desc(schema.battle.createdAt)],
+  });
 
   return (
     <div className="min-h-screen terminal-card crt-flicker">
@@ -26,51 +22,90 @@ export default function Page() {
                 CHESS_BATTLE_SYSTEM.exe
               </CardTitle>
               <div className="terminal-text text-sm opacity-80">
-                &gt; AI Chess Battle Analysis Terminal
+                &gt; AI Chess Battle Setup Terminal
               </div>
             </CardHeader>
           </Card>
         </div>
       </div>
 
-      {/* Battle ID Input Terminal */}
-      <div className="max-w-4xl mx-auto px-6 py-6">
-        <Card className="terminal-card terminal-border">
-          <CardHeader>
-            <CardTitle className="terminal-text text-sm font-mono">BATTLE_ID_INPUT</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="battleId" className="terminal-text text-xs font-mono">
-                ENTER_BATTLE_ID:
-              </Label>
-              <div className="flex gap-2">
-                <Input
-                  id="battleId"
-                  type="text"
-                  value={inputValue}
-                  onChange={(e) => setInputValue(e.target.value)}
-                  placeholder="battle_id_here"
-                  className="terminal-input terminal-text font-mono flex-1"
-                />
-                <Button
-                  type="button"
-                  onClick={handleLoadBattle}
-                  className="terminal-button terminal-text font-mono"
-                >
-                  LOAD_BATTLE
-                </Button>
-              </div>
-            </div>
-            <div className="terminal-text text-xs opacity-60">
-              Current Battle: {battleId.slice(0, 12)}...
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      <BattleSetup />
 
-      {/* Temporal Viewer */}
-      <TemporalChessViewer battleId={battleId} />
+      <div className="max-w-4xl mx-auto px-6 py-8">
+        <div className="terminal-card terminal-border">
+          <CardHeader>
+            <CardTitle className="terminal-text terminal-glow text-xl font-mono">
+              &gt; BATTLES
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {battles.length === 0 ? (
+              <div className="terminal-text text-center py-8 opacity-60">
+                &gt; No battles found. Create your first AI chess battle above.
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {battles.map((battle) => (
+                  <Link
+                    key={battle.id}
+                    href={`/battles/${battle.id}`}
+                    className="block transition-all hover:scale-[1.02] hover:shadow-lg"
+                  >
+                    <Card className="terminal-card terminal-border hover:border-terminal-accent/50 transition-colors">
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-4">
+                            {/* White Player */}
+                            <div className="flex items-center space-x-2">
+                              <span className="text-lg">♔</span>
+                              <div>
+                                <div className="terminal-text text-xs opacity-70">
+                                  WHITE
+                                </div>
+                                <div className="terminal-text font-mono text-sm">
+                                  {formatModelName(battle.whitePlayerModelId)}
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* VS */}
+                            <div className="terminal-text text-terminal-accent font-bold">
+                              VS
+                            </div>
+
+                            {/* Black Player */}
+                            <div className="flex items-center space-x-2">
+                              <span className="text-lg">♛</span>
+                              <div>
+                                <div className="terminal-text text-xs opacity-70">
+                                  BLACK
+                                </div>
+                                <div className="terminal-text font-mono text-sm">
+                                  {formatModelName(battle.blackPlayerModelId)}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Date and Battle ID */}
+                          <div className="text-right">
+                            <div className="terminal-text text-xs opacity-70">
+                              {formatDate(battle.createdAt)}
+                            </div>
+                            <div className="terminal-text text-xs font-mono mt-1">
+                              ID: {battle.id.slice(0, 8)}...
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </div>
+      </div>
     </div>
   );
 }

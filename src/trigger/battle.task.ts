@@ -11,14 +11,13 @@ import { GetNextMoveTask } from "./get-next-move";
 export const BattleTask = schemaTask({
   id: "battle",
   schema: z.object({
+    battleId: z.string(),
     whitePlayerModelId: z.string(),
     blackPlayerModelId: z.string(),
   }),
   run: async (payload) => {
-    const battleId = nanoid();
-
     await db.insert(schema.battle).values({
-      id: battleId,
+      id: payload.battleId,
       whitePlayerModelId: payload.whitePlayerModelId,
       blackPlayerModelId: payload.blackPlayerModelId,
     });
@@ -39,7 +38,7 @@ export const BattleTask = schemaTask({
     const chess = new Chess();
 
     logger.info(
-      `🏁 Starting chess battle: ${payload.whitePlayerModelId} vs ${payload.blackPlayerModelId} (Battle ID: ${battleId})`
+      `🏁 Starting chess battle: ${payload.whitePlayerModelId} vs ${payload.blackPlayerModelId} (Battle ID: ${payload.battleId})`
     );
 
     let lastInvalidMoves: string[] = [];
@@ -90,7 +89,7 @@ export const BattleTask = schemaTask({
 
       await db.insert(schema.move).values({
         id: nanoid(),
-        battleId,
+        battleId: payload.battleId,
         playerId,
         move: nextMoveResult.output.move,
         state: chess.fen(),
@@ -126,6 +125,11 @@ export const BattleTask = schemaTask({
       } (${totalMoves} moves played)`
     );
 
-    return chess.fen();
+    return {
+      battleId: payload.battleId,
+      finalFen: chess.fen(),
+      outcome,
+      totalMoves,
+    };
   },
 });

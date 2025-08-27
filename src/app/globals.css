@@ -1,26 +1,205 @@
 @import "tailwindcss";
+@import "tw-animate-css";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@custom-variant dark (&:is(.dark *));
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+:root {
+  --radius: 0.125rem;
+  /* Terminal-inspired dark theme */
+  --background: #000000;
+  --foreground: #00ff00;
+  --card: #111111;
+  --card-foreground: #00ff00;
+  --popover: #111111;
+  --popover-foreground: #00ff00;
+  --primary: #00ff00;
+  --primary-foreground: #000000;
+  --secondary: #333333;
+  --secondary-foreground: #00ff00;
+  --muted: #222222;
+  --muted-foreground: #888888;
+  --accent: #00ff00;
+  --accent-foreground: #000000;
+  --destructive: #ff4444;
+  --border: #333333;
+  --input: #222222;
+  --ring: #00ff00;
+  --chart-1: #00ff00;
+  --chart-2: #ffff00;
+  --chart-3: #ff8800;
+  --chart-4: #ff4444;
+  --chart-5: #8800ff;
+  --sidebar: #111111;
+  --sidebar-foreground: #00ff00;
+  --sidebar-primary: #00ff00;
+  --sidebar-primary-foreground: #000000;
+  --sidebar-accent: #333333;
+  --sidebar-accent-foreground: #00ff00;
+  --sidebar-border: #333333;
+  --sidebar-ring: #00ff00;
+}
+
+.dark {
+  /* Terminal theme - same as light for consistent retro look */
+  --background: #000000;
+  --foreground: #00ff00;
+  --card: #111111;
+  --card-foreground: #00ff00;
+  --popover: #111111;
+  --popover-foreground: #00ff00;
+  --primary: #00ff00;
+  --primary-foreground: #000000;
+  --secondary: #333333;
+  --secondary-foreground: #00ff00;
+  --muted: #222222;
+  --muted-foreground: #888888;
+  --accent: #00ff00;
+  --accent-foreground: #000000;
+  --destructive: #ff4444;
+  --border: #333333;
+  --input: #222222;
+  --ring: #00ff00;
+  --chart-1: #00ff00;
+  --chart-2: #ffff00;
+  --chart-3: #ff8800;
+  --chart-4: #ff4444;
+  --chart-5: #8800ff;
+  --sidebar: #111111;
+  --sidebar-foreground: #00ff00;
+  --sidebar-primary: #00ff00;
+  --sidebar-primary-foreground: #000000;
+  --sidebar-accent: #333333;
+  --sidebar-accent-foreground: #00ff00;
+  --sidebar-border: #333333;
+  --sidebar-ring: #00ff00;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Courier New', monospace;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* Terminal-inspired custom styles */
+@layer utilities {
+  .terminal-glow {
+    text-shadow: 0 0 10px currentColor;
+  }
+
+  .terminal-border {
+    border: 1px solid var(--border);
+    box-shadow: 0 0 10px rgba(0, 255, 0, 0.3);
+  }
+
+  .terminal-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    box-shadow: 0 0 15px rgba(0, 255, 0, 0.2);
+  }
+
+  .terminal-text {
+    color: var(--foreground);
+    font-family: 'Courier New', monospace;
+    text-shadow: 0 0 5px currentColor;
+  }
+
+  .terminal-button {
+    background: var(--primary);
+    color: var(--primary-foreground);
+    border: 1px solid var(--border);
+    font-family: 'Courier New', monospace;
+    text-shadow: 0 0 5px currentColor;
+    transition: all 0.2s ease;
+  }
+
+  .terminal-button:hover {
+    box-shadow: 0 0 15px rgba(0, 255, 0, 0.5);
+    transform: translateY(-1px);
+  }
+
+  .terminal-input {
+    background: var(--input);
+    border: 1px solid var(--border);
+    color: var(--foreground);
+    font-family: 'Courier New', monospace;
+  }
+
+  .terminal-input:focus {
+    outline: none;
+    box-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+  }
+
+  .scanlines::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0, 255, 0, 0.03) 2px,
+      rgba(0, 255, 0, 0.03) 4px
+    );
+    pointer-events: none;
+  }
+
+  .crt-flicker {
+    animation: flicker 2s infinite alternate;
+  }
+
+  @keyframes flicker {
+    0%, 19%, 21%, 23%, 25%, 54%, 56%, 100% {
+      opacity: 1;
+    }
+    20%, 24%, 55% {
+      opacity: 0.4;
+    }
+  }
 }

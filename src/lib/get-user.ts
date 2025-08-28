@@ -1,10 +1,14 @@
 import { createHash } from "node:crypto";
 import { headers } from "next/headers";
+import { auth } from "@clerk/nextjs/server";
 
 export async function getUser() {
-  const headersList = await headers(); // TODO: this is not working
+  // Prefer Clerk userId when authenticated
+  const { userId } = await auth();
+  if (userId) return userId;
 
-  // Get client identifying information
+  // Fallback: deterministic anonymous user ID from request headers
+  const headersList = await headers();
   const ip =
     headersList.get("x-forwarded-for") ||
     headersList.get("x-real-ip") ||

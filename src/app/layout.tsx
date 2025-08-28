@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import CrtToggle from "@/components/CrtToggle";
 import { ClerkProvider } from "@clerk/nextjs";
+import MergeOnSignin from "./merge-client";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -36,6 +37,7 @@ export default function RootLayout({
           />
         </head>
         <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+          <MergeOnSignin />
           {children}
           <CrtToggle />
         </body>

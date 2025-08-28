@@ -212,6 +212,51 @@ export default function TemporalChessViewer({
                   options={{
                     position: currentMove.state,
                     allowDragging: false,
+                    showNotation: true,
+                    id: "terminal-board",
+                    boardStyle: {
+                      background: "var(--card)",
+                      border: "1px solid var(--border)",
+                      boxShadow: "0 0 15px rgba(8, 255, 8, 0.2)",
+                    },
+                    lightSquareStyle: {
+                      background: "var(--card)",
+                      boxShadow: "0 0 15px rgba(8, 255, 8, 0.2)"
+                    },
+                    darkSquareStyle: {
+                      background: "var(--secondary)",
+                      boxShadow: "0 0 15px rgba(8, 255, 8, 0.2)",
+
+                    },
+                    dropSquareStyle: {
+                      background: "rgba(1, 255, 0, 0.08)",
+                      boxShadow: "inset 0 0 0 2px var(--ring)",
+                      
+                    },
+                    darkSquareNotationStyle: {
+                      color: "var(--foreground)",
+                      textShadow: "0 0 5px var(--foreground)",
+                      fontFamily: "'Courier New', monospace",
+                      opacity: 0.9,
+                    },
+                    lightSquareNotationStyle: {
+                      color: "var(--foreground)",
+                      textShadow: "0 0 5px var(--foreground)",
+                      fontFamily: "'Courier New', monospace",
+                      opacity: 0.9,
+                    },
+                    alphaNotationStyle: {
+                      color: "var(--foreground)",
+                      textShadow: "0 0 5px var(--foreground)",
+                      fontFamily: "'Courier New', monospace",
+                      opacity: 0.8,
+                    },
+                    numericNotationStyle: {
+                      color: "var(--foreground)",
+                      textShadow: "0 0 5px var(--foreground)",
+                      fontFamily: "'Courier New', monospace",
+                      opacity: 0.7,
+                    },
                   }}
                 />
               </div>

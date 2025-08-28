@@ -17,7 +17,12 @@ export default function TemporalChessViewer({
   battleId,
 }: TemporalChessViewerProps) {
   const [currentMoveIndex, setCurrentMoveIndex] = useState(0);
-  const [moves, setMoves] = useState<schema.MoveSelect[]>([]);
+  // Minimal extension so we can add a synthetic START entry
+  type TimelineMove = Pick<schema.MoveSelect, "id" | "state" | "is_valid" | "move" | "tokens_in" | "tokens_out"> & {
+    isSynthetic?: boolean;
+  };
+  const [moves, setMoves] = useState<TimelineMove[]>([]);
+  const [initialized, setInitialized] = useState(false);
   const [battle, setBattle] = useState<schema.BattleSelect | null>(null);
 
   const { isLoading: movesLoading, data: movesData } =
@@ -39,12 +44,30 @@ export default function TemporalChessViewer({
   });
 
   useEffect(() => {
-    if (movesData && movesData.length > 0) {
-      setMoves(movesData);
-      // Start with the last move (current position)
-      setCurrentMoveIndex(movesData.length - 1);
+    // Always include a zero-state START entry before any moves
+    if (movesData) {
+      const INITIAL_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+      const startEntry: TimelineMove = {
+        id: "START",
+        move: "START",
+        state: INITIAL_FEN,
+        is_valid: true,
+        tokens_in: null,
+        tokens_out: null,
+        isSynthetic: true,
+      };
+      const augmented: TimelineMove[] = [startEntry, ...movesData];
+      setMoves(augmented);
+
+      // Only force-start at zero once; after that, keep the user's position
+      if (!initialized) {
+        setCurrentMoveIndex(0);
+        setInitialized(true);
+      } else {
+        setCurrentMoveIndex((prev) => Math.min(prev, augmented.length - 1));
+      }
     }
-  }, [movesData]);
+  }, [movesData, initialized]);
 
   useEffect(() => {
     if (battleData && battleData.length > 0) {
@@ -118,10 +141,15 @@ export default function TemporalChessViewer({
   }
 
   const currentMove = moves[currentMoveIndex];
-  const moveNumber = Math.floor(currentMoveIndex / 2) + 1;
-  const isWhiteMove = currentMoveIndex % 2 === 0;
+  const isStart = currentMove?.id === "START" || currentMove?.isSynthetic === true;
+  const moveNumber = isStart
+    ? 0
+    : Math.floor((currentMoveIndex - 1) / 2) + 1;
+  // With a START entry at index 0, white moves at indices 1,3,5,...
+  const isWhiteMove = currentMoveIndex === 0 ? true : currentMoveIndex % 2 === 1;
   const playerColor = isWhiteMove ? "White" : "Black";
-  const progressPercentage = ((currentMoveIndex + 1) / moves.length) * 100;
+  const progressPercentage =
+    moves.length > 1 ? (currentMoveIndex / (moves.length - 1)) * 100 : 0;
 
   return (
     <div className="min-h-screen p-6 terminal-card crt-flicker">
@@ -144,7 +172,7 @@ export default function TemporalChessViewer({
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
                 <Badge
-                  variant={currentMoveIndex % 2 === 0 ? "default" : "secondary"}
+                  variant={isWhiteMove ? "default" : "secondary"}
                   className="terminal-text"
                 >
                   WHITE
@@ -160,7 +188,7 @@ export default function TemporalChessViewer({
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
                 <Badge
-                  variant={currentMoveIndex % 2 === 1 ? "default" : "secondary"}
+                  variant={!isWhiteMove ? "default" : "secondary"}
                   className="terminal-text"
                 >
                   BLACK
@@ -184,6 +212,51 @@ export default function TemporalChessViewer({
                   options={{
                     position: currentMove.state,
                     allowDragging: false,
+                    showNotation: true,
+                    id: "terminal-board",
+                    boardStyle: {
+                      background: "var(--card)",
+                      border: "1px solid var(--border)",
+                      boxShadow: "0 0 15px rgba(8, 255, 8, 0.2)",
+                    },
+                    lightSquareStyle: {
+                      background: "var(--card)",
+                      boxShadow: "0 0 15px rgba(8, 255, 8, 0.2)"
+                    },
+                    darkSquareStyle: {
+                      background: "var(--secondary)",
+                      boxShadow: "0 0 15px rgba(8, 255, 8, 0.2)",
+
+                    },
+                    dropSquareStyle: {
+                      background: "rgba(1, 255, 0, 0.08)",
+                      boxShadow: "inset 0 0 0 2px var(--ring)",
+                      
+                    },
+                    darkSquareNotationStyle: {
+                      color: "var(--foreground)",
+                      textShadow: "0 0 5px var(--foreground)",
+                      fontFamily: "'Courier New', monospace",
+                      opacity: 0.9,
+                    },
+                    lightSquareNotationStyle: {
+                      color: "var(--foreground)",
+                      textShadow: "0 0 5px var(--foreground)",
+                      fontFamily: "'Courier New', monospace",
+                      opacity: 0.9,
+                    },
+                    alphaNotationStyle: {
+                      color: "var(--foreground)",
+                      textShadow: "0 0 5px var(--foreground)",
+                      fontFamily: "'Courier New', monospace",
+                      opacity: 0.8,
+                    },
+                    numericNotationStyle: {
+                      color: "var(--foreground)",
+                      textShadow: "0 0 5px var(--foreground)",
+                      fontFamily: "'Courier New', monospace",
+                      opacity: 0.7,
+                    },
                   }}
                 />
               </div>
@@ -202,7 +275,9 @@ export default function TemporalChessViewer({
               <CardContent className="space-y-3">
                 <div className="text-center">
                   <div className="terminal-text text-xl terminal-glow">
-                    MOVE_{moveNumber.toString().padStart(2, "0")}
+                    {isStart
+                      ? "START"
+                      : `MOVE_${moveNumber.toString().padStart(2, "0")}`}
                   </div>
                   <div className="terminal-text text-sm opacity-80">
                     {playerColor}_PLAYER
@@ -213,26 +288,30 @@ export default function TemporalChessViewer({
                   <div className="flex justify-between">
                     <span className="terminal-text opacity-70">COMMAND:</span>
                     <Badge
-                      variant={currentMove.is_valid ? "default" : "destructive"}
+                      variant={isStart ? "secondary" : currentMove.is_valid ? "default" : "destructive"}
                       className="terminal-text"
                     >
-                      {currentMove.move}
+                      {isStart ? "—" : currentMove.move}
                     </Badge>
                   </div>
                   <div className="flex justify-between">
                     <span className="terminal-text opacity-70">STATUS:</span>
                     <span
                       className={`terminal-text ${
-                        currentMove.is_valid ? "text-green-400" : "text-red-400"
+                        isStart
+                          ? "text-foreground"
+                          : currentMove.is_valid
+                          ? "text-green-400"
+                          : "text-red-400"
                       }`}
                     >
-                      {currentMove.is_valid ? "VALID" : "INVALID"}
+                      {isStart ? "READY" : currentMove.is_valid ? "VALID" : "INVALID"}
                     </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="terminal-text opacity-70">POSITION:</span>
                     <span className="terminal-text">
-                      {currentMoveIndex + 1}/{moves.length}
+                      {currentMoveIndex}/{Math.max(0, moves.length - 1)}
                     </span>
                   </div>
                   {currentMove.tokens_in && (
@@ -304,8 +383,8 @@ export default function TemporalChessViewer({
 
                 <div className="space-y-2">
                   <div className="flex justify-between text-xs terminal-text opacity-70">
-                    <span>POS: 001</span>
-                    <span>END: {moves.length.toString().padStart(3, "0")}</span>
+                    <span>POS: {String(currentMoveIndex).padStart(3, "0")}</span>
+                    <span>END: {String(Math.max(0, moves.length - 1)).padStart(3, "0")}</span>
                   </div>
                   <Progress value={progressPercentage} className="h-2" />
                 </div>
@@ -336,11 +415,15 @@ export default function TemporalChessViewer({
                           : "hover:bg-secondary/20 terminal-text"
                       }`}
                     >
-                      <span className="opacity-70">
-                        {Math.floor(index / 2) + 1}
-                        {index % 2 === 0 ? "." : "..."}
-                      </span>
-                      <span className="ml-2">{move.move}</span>
+                      {index === 0 ? (
+                        <span className="opacity-70">START</span>
+                      ) : (
+                        <span className="opacity-70">
+                          {Math.floor((index - 1) / 2) + 1}
+                          {(index - 1) % 2 === 0 ? "." : "..."}
+                        </span>
+                      )}
+                      <span className="ml-2">{index === 0 ? "—" : move.move}</span>
                       {!move.is_valid && (
                         <span className="ml-2 text-red-400">[ERR]</span>
                       )}

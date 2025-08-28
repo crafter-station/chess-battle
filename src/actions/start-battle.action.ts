@@ -3,6 +3,8 @@
 import { getUser } from "@/lib/get-user";
 import { nanoid } from "@/lib/nanoid";
 import { BattleTask } from "@/trigger/battle.task";
+import { auth } from "@clerk/nextjs/server";
+import { cookies } from "next/headers";
 
 export type StartBattleActionState = {
   input: {
@@ -39,6 +41,24 @@ export async function StartBattleAction(
       };
     }
 
+    // Enforce guest battle limit: allow first battle, then require sign-in
+    const { userId: authedUserId } = await auth();
+    if (!authedUserId) {
+      const cookieStore = await cookies();
+      const raw = cookieStore.get("guest_battles_count")?.value;
+      const count = Number.parseInt(raw || "0", 10) || 0;
+
+      if (count >= 1) {
+        return {
+          input,
+          output: {
+            success: false,
+            error: "Please sign in to start another battle.",
+          },
+        };
+      }
+    }
+
     const battleId = nanoid();
 
     const userId = await getUser();
@@ -49,6 +69,19 @@ export async function StartBattleAction(
       whitePlayerModelId: input.whitePlayerModelId,
       blackPlayerModelId: input.blackPlayerModelId,
     });
+
+    // Increment guest battle count after successful trigger
+    if (!authedUserId) {
+      const cookieStore = await cookies();
+      const raw = cookieStore.get("guest_battles_count")?.value;
+      const count = Number.parseInt(raw || "0", 10) || 0;
+      cookieStore.set("guest_battles_count", String(count + 1), {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        maxAge: 60 * 60 * 24 * 365,
+      });
+    }
 
     return { input, output: { success: true, data: { battleId } } };
   } catch (error) {

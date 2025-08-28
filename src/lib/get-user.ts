@@ -1,10 +1,28 @@
 import { createHash } from "node:crypto";
 import { headers } from "next/headers";
+import { auth } from "@clerk/nextjs/server";
+import { cookies } from "next/headers";
+import { nanoid } from "@/lib/nanoid";
 
 export async function getUser() {
-  const headersList = await headers(); // TODO: this is not working
+  // Prefer Clerk userId when authenticated
+  const { userId } = await auth();
+  if (userId) return userId;
 
-  // Get client identifying information
+  // Fallback: deterministic anonymous user ID from request headers
+  const cookieStore = await cookies();
+  const existingAnon = cookieStore.get("anon_user_id")?.value;
+  if (existingAnon) return existingAnon;
+
+  const newAnon = `anon_${nanoid()}`;
+  cookieStore.set("anon_user_id", newAnon, {
+    httpOnly: true,
+    sameSite: "lax",
+    path: "/",
+    maxAge: 60 * 60 * 24 * 365, // 1 year
+  });
+
+  const headersList = await headers();
   const ip =
     headersList.get("x-forwarded-for") ||
     headersList.get("x-real-ip") ||

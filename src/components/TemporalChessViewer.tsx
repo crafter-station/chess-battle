@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useShape } from "@electric-sql/react";
-import { Chessboard } from "react-chessboard";
+import { Chessboard, defaultPieces } from "react-chessboard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
@@ -24,6 +24,8 @@ export default function TemporalChessViewer({
   const [moves, setMoves] = useState<TimelineMove[]>([]);
   const [initialized, setInitialized] = useState(false);
   const [battle, setBattle] = useState<schema.BattleSelect | null>(null);
+  const [autoFollow, setAutoFollow] = useState(true);
+  const moveLogRef = useRef<HTMLDivElement | null>(null);
 
   const { isLoading: movesLoading, data: movesData } =
     useShape<schema.MoveSelect>({
@@ -59,15 +61,27 @@ export default function TemporalChessViewer({
       const augmented: TimelineMove[] = [startEntry, ...movesData];
       setMoves(augmented);
 
-      // Only force-start at zero once; after that, keep the user's position
       if (!initialized) {
-        setCurrentMoveIndex(0);
         setInitialized(true);
+        setCurrentMoveIndex(autoFollow ? augmented.length - 1 : 0);
       } else {
-        setCurrentMoveIndex((prev) => Math.min(prev, augmented.length - 1));
+        setCurrentMoveIndex((prev) =>
+          autoFollow ? augmented.length - 1 : Math.min(prev, augmented.length - 1),
+        );
       }
     }
-  }, [movesData, initialized]);
+  }, [movesData, initialized, autoFollow]);
+
+  // Auto-scroll move log to bottom when following latest
+  useEffect(() => {
+    const atEnd = currentMoveIndex === Math.max(0, moves.length - 1);
+    if (autoFollow || atEnd) {
+      const el = moveLogRef.current;
+      if (el) {
+        el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+      }
+    }
+  }, [moves, currentMoveIndex, autoFollow]);
 
   useEffect(() => {
     if (battleData && battleData.length > 0) {
@@ -76,19 +90,24 @@ export default function TemporalChessViewer({
   }, [battleData]);
 
   const goToPreviousMove = useCallback(() => {
+    setAutoFollow(false);
     setCurrentMoveIndex(Math.max(0, currentMoveIndex - 1));
   }, [currentMoveIndex]);
 
   const goToNextMove = useCallback(() => {
-    setCurrentMoveIndex(Math.min(moves.length - 1, currentMoveIndex + 1));
+    const nextIndex = Math.min(moves.length - 1, currentMoveIndex + 1);
+    setCurrentMoveIndex(nextIndex);
+    setAutoFollow(nextIndex === moves.length - 1);
   }, [currentMoveIndex, moves.length]);
 
   const goToStart = useCallback(() => {
+    setAutoFollow(false);
     setCurrentMoveIndex(0);
   }, []);
 
   const goToEnd = useCallback(() => {
     setCurrentMoveIndex(moves.length - 1);
+    setAutoFollow(true);
   }, [moves.length]);
 
   // Keyboard navigation
@@ -150,6 +169,59 @@ export default function TemporalChessViewer({
   const playerColor = isWhiteMove ? "White" : "Black";
   const progressPercentage =
     moves.length > 1 ? (currentMoveIndex / (moves.length - 1)) * 100 : 0;
+
+  // Terminal-themed custom pieces: add green glow/border to black pieces
+  const terminalPieces = {
+    ...defaultPieces,
+    bP: (props?: { fill?: string; svgStyle?: React.CSSProperties }) =>
+      defaultPieces.bP({
+        ...props,
+        svgStyle: {
+          ...(props?.svgStyle ?? {}),
+          filter: "drop-shadow(0 0 4px rgba(0,255,0,0.9))",
+        },
+      }),
+    bR: (props?: { fill?: string; svgStyle?: React.CSSProperties }) =>
+      defaultPieces.bR({
+        ...props,
+        svgStyle: {
+          ...(props?.svgStyle ?? {}),
+          filter: "drop-shadow(0 0 4px rgba(0,255,0,0.9))",
+        },
+      }),
+    bN: (props?: { fill?: string; svgStyle?: React.CSSProperties }) =>
+      defaultPieces.bN({
+        ...props,
+        svgStyle: {
+          ...(props?.svgStyle ?? {}),
+          filter: "drop-shadow(0 0 4px rgba(0,255,0,0.9))",
+        },
+      }),
+    bB: (props?: { fill?: string; svgStyle?: React.CSSProperties }) =>
+      defaultPieces.bB({
+        ...props,
+        svgStyle: {
+          ...(props?.svgStyle ?? {}),
+          filter: "drop-shadow(0 0 4px rgba(0,255,0,0.9))",
+        },
+      }),
+    bQ: (props?: { fill?: string; svgStyle?: React.CSSProperties }) =>
+      defaultPieces.bQ({
+        ...props,
+        svgStyle: {
+          ...(props?.svgStyle ?? {}),
+          filter: "drop-shadow(0 0 4px rgba(0,255,0,0.9))",
+        },
+      }),
+    bK: (props?: { fill?: string; svgStyle?: React.CSSProperties }) =>
+      defaultPieces.bK({
+        ...props,
+        svgStyle: {
+          ...(props?.svgStyle ?? {}),
+          filter: "drop-shadow(0 0 4px rgba(0,255,0,0.9))",
+        },
+      }),
+  };
 
   return (
     <div className="min-h-screen p-6 terminal-card crt-flicker">
@@ -214,6 +286,7 @@ export default function TemporalChessViewer({
                     allowDragging: false,
                     showNotation: true,
                     id: "terminal-board",
+                    pieces: terminalPieces,
                     boardStyle: {
                       background: "var(--card)",
                       border: "1px solid var(--border)",
@@ -387,6 +460,17 @@ export default function TemporalChessViewer({
                     <span>END: {String(Math.max(0, moves.length - 1)).padStart(3, "0")}</span>
                   </div>
                   <Progress value={progressPercentage} className="h-2" />
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="terminal-text opacity-70">FOLLOW LATEST</span>
+                    <Button
+                      type="button"
+                      onClick={() => setAutoFollow((v) => !v)}
+                      variant={autoFollow ? "default" : "outline"}
+                      className="terminal-button terminal-text px-3 py-1"
+                    >
+                      {autoFollow ? "ON" : "OFF"}
+                    </Button>
+                  </div>
                 </div>
 
                 <div className="terminal-text text-xs opacity-60 text-center">
@@ -403,7 +487,7 @@ export default function TemporalChessViewer({
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="max-h-64 overflow-y-auto space-y-1 font-mono text-xs">
+                <div ref={moveLogRef} className="max-h-64 overflow-y-auto space-y-1 font-mono text-xs">
                   {moves.map((move, index) => (
                     <button
                       key={move.id}

@@ -47,6 +47,10 @@ export const BattleTask = schemaTask({
     while (true) {
       const moveNumber = Math.floor(chess.history().length / 2) + 1;
       const currentPlayer = chess.turn() === "w" ? "White" : "Black";
+      const currentPlayerModelId =
+        chess.turn() === "w"
+          ? battle.whitePlayer.model_id
+          : battle.blackPlayer.model_id;
 
       const playerId =
         chess.turn() === "w" ? battle.whitePlayer.id : battle.blackPlayer.id;
@@ -80,7 +84,7 @@ export const BattleTask = schemaTask({
             error.message.includes("Invalid move")
           ) {
             logger.error(
-              `${currentPlayer} (Move ${moveNumber}): ❌ Invalid move "${nextMoveResult.output.move}" - ${error.message}. Retrying...`
+              `${currentPlayer} (${currentPlayerModelId}) (Move ${moveNumber}): ❌ Invalid move "${nextMoveResult.output.move}" - ${error.message}. Retrying...`
             );
           } else {
             throw error;
@@ -88,18 +92,9 @@ export const BattleTask = schemaTask({
         }
       } else {
         logger.error(
-          `${currentPlayer} (Move ${moveNumber}): ❌ No move returned.`
+          `${currentPlayer} (${currentPlayerModelId}) (Move ${moveNumber}): ❌ No move returned.`
         );
         isValid = false;
-      }
-
-      if (isValid) {
-        lastInvalidMoves = [];
-      } else {
-        lastInvalidMoves = [
-          nextMoveResult.output.move ?? "",
-          ...lastInvalidMoves,
-        ];
       }
 
       await db.insert(schema.move).values({
@@ -113,11 +108,13 @@ export const BattleTask = schemaTask({
         tokens_in: nextMoveResult.output.tokensIn,
         tokens_out: nextMoveResult.output.tokensOut,
         response_time: nextMoveResult.output.responseTime,
+        confidence: nextMoveResult.output.confidence,
+        reasoning: nextMoveResult.output.reasoning,
       });
 
       if (lastInvalidMoves.length > 2) {
         logger.warn(
-          `🤖 Too many invalid moves: ${lastInvalidMoves.join(
+          `🤖 ${currentPlayer} (${currentPlayerModelId}) Too many invalid moves: ${lastInvalidMoves.join(
             ", "
           )}. Let's make a move ourselves.`
         );
@@ -140,9 +137,6 @@ export const BattleTask = schemaTask({
           move: randomMove,
           state: chess.fen(),
           is_valid: true,
-          tokens_in: 0,
-          tokens_out: 0,
-          response_time: 0,
         });
       }
 
@@ -169,11 +163,11 @@ export const BattleTask = schemaTask({
 
       const responseTimeWhite = moves
         .filter((m) => m.player_id === battle.whitePlayer.id)
-        .reduce((acc, move) => acc + move.response_time, 0);
+        .reduce((acc, move) => acc + (move.response_time ?? 0), 0);
 
       const responseTimeBlack = moves
         .filter((m) => m.player_id === battle.blackPlayer.id)
-        .reduce((acc, move) => acc + move.response_time, 0);
+        .reduce((acc, move) => acc + (move.response_time ?? 0), 0);
 
       winner =
         responseTimeWhite < responseTimeBlack
@@ -193,6 +187,13 @@ export const BattleTask = schemaTask({
       `${outcome} Final position: ${
         chess.fen().split(" ")[0]
       } (${totalMoves} moves played)`
+    );
+    logger.info(
+      `🏆 ${outcome} - ${
+        winner === battle.white_player_id
+          ? `White (${battle.whitePlayer.model_id})`
+          : `Black (${battle.blackPlayer.model_id})`
+      } won`
     );
 
     return {

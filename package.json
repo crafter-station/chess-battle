@@ -28,6 +28,7 @@
     "dotenv": "^17.2.1",
     "drizzle-orm": "^0.44.4",
     "drizzle-zod": "^0.8.3",
+    "firecrawl": "3.3.0",
     "lucide-react": "^0.542.0",
     "nanoid": "^5.1.5",
     "next": "15.5.0",

@@ -4,7 +4,15 @@ import type { MoveSelect, PlayerSelect } from "@/db/schema";
 
 export type MoveWithPlayer = Pick<
   MoveSelect,
-  "id" | "state" | "is_valid" | "move" | "tokens_in" | "tokens_out" | "player_id"
+  | "id"
+  | "state"
+  | "is_valid"
+  | "move"
+  | "tokens_in"
+  | "tokens_out"
+  | "player_id"
+  | "confidence"
+  | "reasoning"
 > & {
   player_model_id: string | null;
 };

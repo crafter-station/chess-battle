@@ -25,6 +25,8 @@ export const GetNextMoveTask = schemaTask({
       model: playerModelId,
       schema: z.object({
         move: z.string().optional(),
+        reasoning: z.string().max(280).optional(),
+        confidence: z.number().int().min(0).max(100).optional(),
       }),
       messages: constructMessages(chess, payload.lastInvalidMoves),
       experimental_repairText: async () => {
@@ -45,6 +47,8 @@ export const GetNextMoveTask = schemaTask({
       move,
       tokensIn,
       tokensOut,
+      reasoning: generateMoveResult.object.reasoning,
+      confidence: generateMoveResult.object.confidence,
     };
   },
 });
@@ -55,7 +59,7 @@ function constructMessages(chess: Chess, lastInvalidMoves: string[]) {
   return [
     {
       role: "system",
-      content: `You are a chess grandmaster. Analyze the position comprehensively and respond with ONLY the best legal move in Standard Algebraic Notation (SAN).
+      content: `You are a chess grandmaster. Analyze the position and return a short JSON with the best legal move, an optional brief reasoning (max 2 sentences), and an optional confidence from 0-100.
 
 KEY PRINCIPLES:
 • Evaluate material, piece activity, pawn structure, and king safety
@@ -71,6 +75,9 @@ AVAILABLE LEGAL MOVES:
 RESPONSE FORMAT:
 - Return the move (e.g., "Nf3", "O-O", "Qxd4") in JSON format
 - Format is {"move":"e4"}
+- Strict JSON schema: {"move":"Nf3","reasoning":"...","confidence":82}
+- Do not include any extra keys or text outside JSON
+- Choose a move ONLY from the provided legal moves list
 - Ensure the move is legal and follows chess rules
 - Never leave your king in check unless checkmate is unavoidable`,
     },

@@ -75,20 +75,17 @@ export function createStartBattleOptimistic(
         is_valid: true,
         tokens_in: null as unknown as number,
         tokens_out: null as unknown as number,
+        confidence: null as unknown as number,
+        reasoning: null as unknown as string,
         created_at: now,
       });
-      // Persist the optimistic battleId on the form so server uses it
-      const formData = new FormData();
-      formData.set("whitePlayerModelId", input.whitePlayerModelId);
-      formData.set("blackPlayerModelId", input.blackPlayerModelId);
-      formData.set("battleId", battleId);
-      void submit(formData);
+      // We trigger the server action in mutationFn to avoid duplicate submissions here
     },
     mutationFn: async (input) => {
       const formData = new FormData();
       formData.set("whitePlayerModelId", input.whitePlayerModelId);
       formData.set("blackPlayerModelId", input.blackPlayerModelId);
-      // battleId already sent in onMutate above to reduce delay
+      if (input.battleId) formData.set("battleId", input.battleId);
       await Promise.resolve(submit(formData));
     },
   });

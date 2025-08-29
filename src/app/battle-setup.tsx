@@ -24,10 +24,7 @@ export default function BattleSetup() {
     },
   });
 
-  const optimisticStart = React.useMemo(
-    () => createStartBattleOptimistic(action),
-    [action],
-  );
+  const optimisticStart = React.useMemo(() => createStartBattleOptimistic(action), [action]);
 
   React.useEffect(() => {
     if (state.output.success && "data" in state.output) {
@@ -109,17 +106,15 @@ export default function BattleSetup() {
 
           <form
             action={async (formData) => {
-              if (whiteModel && blackModel) {
-                const id = nanoid();
-                optimisticStart({
-                  whitePlayerModelId: whiteModel,
-                  blackPlayerModelId: blackModel,
-                  battleId: id,
-                });
-                // Navigate immediately to optimistic route
-                router.push(`/battles/${id}`);
-              }
-              void action(formData);
+              if (!whiteModel || !blackModel) return;
+              const id = nanoid();
+              optimisticStart({
+                whitePlayerModelId: whiteModel,
+                blackPlayerModelId: blackModel,
+                battleId: id,
+              });
+              // Do NOT also call action(formData) here; optimisticStart triggers it in mutationFn
+              router.push(`/battles/${id}`);
             }}
           >
             <input type="hidden" name="whitePlayerModelId" value={whiteModel} />

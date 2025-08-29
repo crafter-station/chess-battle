@@ -23,9 +23,9 @@ export const GetNextMoveTask = schemaTask({
 
     const generateMoveResult = await generateObject({
       model: playerModelId,
-      // Ask for a structured object so we can capture reasoning and confidence
+      // Accept a free-form move string; we'll validate locally afterwards
       schema: z.object({
-        move: z.enum(validMoves as [string, ...string[]]),
+        move: z.string(),
         reasoning: z.string().max(280).optional(),
         confidence: z.number().int().min(0).max(100).optional(),
       }),
@@ -48,6 +48,7 @@ AVAILABLE LEGAL MOVES:
 RESPONSE FORMAT:
 - Strict JSON schema: {"move":"Nf3","reasoning":"...","confidence":82}
 - Do not include any extra keys or text outside JSON
+- Choose a move ONLY from the provided legal moves list
 - Ensure the move is legal and follows chess rules
 - Never leave your king in check unless checkmate is unavoidable`,
         },

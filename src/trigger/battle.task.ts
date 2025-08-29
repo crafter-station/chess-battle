@@ -64,31 +64,23 @@ export const BattleTask = schemaTask({
         throw new Error("Failed to get next move");
       }
 
-      let isValid = true;
-
-      try {
-        chess.move(nextMoveResult.output.move);
-
-        logger.info(
-          `${currentPlayer} (Move ${moveNumber}): ${
-            nextMoveResult.output.move
-          } - Position: ${chess.fen().split(" ")[0]}`
-        );
-      } catch (error) {
-        if (error instanceof Error && error.message.includes("Invalid move")) {
-          logger.error(
-            `${currentPlayer} (Move ${moveNumber}): ❌ Invalid move "${nextMoveResult.output.move}" - ${error.message}. Retrying...`
-          );
-        } else {
-          isValid = false;
-          throw error;
-        }
-      }
+      const proposedMove = String(nextMoveResult.output.move);
+      const legalMoves = chess.moves();
+      const isValid = legalMoves.includes(proposedMove);
 
       if (isValid) {
+        chess.move(proposedMove);
+        logger.info(
+          `${currentPlayer} (Move ${moveNumber}): ${proposedMove} - Position: ${
+            chess.fen().split(" ")[0]
+          }`
+        );
         lastInvalidMoves = [];
       } else {
-        lastInvalidMoves = [...lastInvalidMoves, nextMoveResult.output.move];
+        logger.error(
+          `${currentPlayer} (Move ${moveNumber}): ❌ Invalid move "${proposedMove}" - Not in legal moves list. Retrying...`
+        );
+        lastInvalidMoves = [...lastInvalidMoves, proposedMove];
       }
 
       try {
@@ -97,7 +89,7 @@ export const BattleTask = schemaTask({
           battle_d: payload.battleId,
           user_id: payload.userId,
           player_id: playerId,
-          move: nextMoveResult.output.move,
+          move: proposedMove,
           state: chess.fen(),
           is_valid: isValid,
           tokens_in: nextMoveResult.output.tokensIn,
@@ -112,7 +104,7 @@ export const BattleTask = schemaTask({
           battle_d: payload.battleId,
           user_id: payload.userId,
           player_id: playerId,
-          move: nextMoveResult.output.move,
+          move: proposedMove,
           state: chess.fen(),
           is_valid: isValid,
           tokens_in: nextMoveResult.output.tokensIn,

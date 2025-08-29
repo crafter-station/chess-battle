@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "concurrently \"npx trigger.dev@latest dev\" \"next dev\"",
-    "dev:next": "next dev",
-    "dev:trigger": "npx trigger.dev@latest dev",
+    "devt": "concurrently \"npx trigger.dev@latest dev\" \"next dev\"",
+    "dev": "next dev",
+    "tr": "npx trigger.dev@latest dev",
     "build": "next build",
     "start": "next start",
     "lint": "biome check",

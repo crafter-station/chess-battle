@@ -8,11 +8,8 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type * as schema from "@/db/schema";
-import {
-  movesByBattleCollection,
-  battleByIdCollection,
-  playerByIdCollection,
-} from "@/lib/collections";
+import { movesByBattleCollection, battleByIdCollection, playerByIdCollection } from "@/lib/collections";
+import { buildMovesWithPlayersQuery, type MoveWithPlayer } from "@/lib/queries";
 
 interface TemporalChessViewerProps {
   battleId: string;
@@ -25,6 +22,7 @@ export default function TemporalChessViewer({
   // Minimal extension so we can add a synthetic START entry
   type TimelineMove = Pick<schema.MoveSelect, "id" | "state" | "is_valid" | "move" | "tokens_in" | "tokens_out"> & {
     isSynthetic?: boolean;
+    player_model_id?: string | null;
   };
   const [moves, setMoves] = useState<TimelineMove[]>([]);
   const [initialized, setInitialized] = useState(false);
@@ -45,6 +43,9 @@ export default function TemporalChessViewer({
     [battleId],
   );
 
+  const movesWithPlayers = useLiveQuery(buildMovesWithPlayersQuery(battleId), [battleId]);
+  const movesWithPlayersData = movesWithPlayers?.data as MoveWithPlayer[] | undefined;
+
   const { data: whitePlayerData } = useLiveQuery(
     (q) => q.from({ player: playerByIdCollection(whiteId ?? "__none__") }),
     [whiteId],
@@ -57,7 +58,10 @@ export default function TemporalChessViewer({
 
   useEffect(() => {
     // Always include a zero-state START entry before any moves
-    if (movesData) {
+    const joinedOrBase: TimelineMove[] | undefined =
+      (movesWithPlayersData as unknown as TimelineMove[] | undefined) ??
+      (movesData as unknown as TimelineMove[] | undefined);
+    if (joinedOrBase) {
       const INITIAL_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
       const startEntry: TimelineMove = {
         id: "START",
@@ -68,7 +72,7 @@ export default function TemporalChessViewer({
         tokens_out: null,
         isSynthetic: true,
       };
-      const augmented: TimelineMove[] = [startEntry, ...movesData];
+      const augmented: TimelineMove[] = [startEntry, ...joinedOrBase];
       setMoves(augmented);
 
       if (!initialized) {
@@ -80,7 +84,7 @@ export default function TemporalChessViewer({
         );
       }
     }
-  }, [movesData, initialized, autoFollow]);
+  }, [movesData, movesWithPlayersData, initialized, autoFollow]);
 
   // Auto-scroll move log to bottom when following latest
   useEffect(() => {
@@ -518,6 +522,9 @@ export default function TemporalChessViewer({
                         </span>
                       )}
                       <span className="ml-2">{index === 0 ? "—" : move.move}</span>
+                      {index !== 0 && move.player_model_id && (
+                        <span className="ml-2 opacity-60">[{move.player_model_id}]</span>
+                      )}
                       {!move.is_valid && (
                         <span className="ml-2 text-red-400">[ERR]</span>
                       )}

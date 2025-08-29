@@ -6,43 +6,40 @@ import { db } from "@/db";
 import * as schema from "@/db/schema";
 import { nanoid } from "@/lib/nanoid";
 
-import { GetNextMoveTask } from "./get-next-move";
+import { GetNextMoveTask } from "./get-next-move.task";
+import { and, eq } from "drizzle-orm";
 
 export const BattleTask = schemaTask({
   id: "battle",
   schema: z.object({
     battleId: z.string(),
     userId: z.string(),
-    whitePlayerModelId: z.string(),
-    blackPlayerModelId: z.string(),
   }),
   run: async (payload) => {
-    const whitePlayerId = nanoid();
-    const blackPlayerId = nanoid();
-
-    await db.insert(schema.player).values({
-      id: whitePlayerId,
-      model_id: payload.whitePlayerModelId,
-      user_id: payload.userId,
+    const battle = await db.query.battle.findFirst({
+      where: and(
+        eq(schema.battle.id, payload.battleId),
+        eq(schema.battle.user_id, payload.userId)
+      ),
+      with: {
+        whitePlayer: true,
+        blackPlayer: true,
+        moves: true,
+      },
     });
 
-    await db.insert(schema.player).values({
-      id: blackPlayerId,
-      model_id: payload.blackPlayerModelId,
-      user_id: payload.userId,
-    });
+    if (!battle) {
+      throw new Error("Battle not found");
+    }
 
-    await db.insert(schema.battle).values({
-      id: payload.battleId,
-      white_player_id: whitePlayerId,
-      black_player_id: blackPlayerId,
-      user_id: payload.userId,
-    });
+    if (battle.moves.length > 0) {
+      throw new Error("Battle already started");
+    }
 
     const chess = new Chess();
 
     logger.info(
-      `🏁 Starting chess battle: ${payload.whitePlayerModelId} vs ${payload.blackPlayerModelId} (Battle ID: ${payload.battleId})`
+      `🏁 Starting chess battle: ${battle.whitePlayer.model_id} vs ${battle.blackPlayer.model_id} (Battle ID: ${payload.battleId})`
     );
 
     let lastInvalidMoves: string[] = [];
@@ -51,12 +48,13 @@ export const BattleTask = schemaTask({
       const moveNumber = Math.floor(chess.history().length / 2) + 1;
       const currentPlayer = chess.turn() === "w" ? "White" : "Black";
 
-      const playerId = chess.turn() === "w" ? whitePlayerId : blackPlayerId;
+      const playerId =
+        chess.turn() === "w" ? battle.whitePlayer.id : battle.blackPlayer.id;
 
       const nextMoveResult = await GetNextMoveTask.triggerAndWait({
         board: chess.fen(),
-        whitePlayerModelId: payload.whitePlayerModelId,
-        blackPlayerModelId: payload.blackPlayerModelId,
+        whitePlayerModelId: battle.whitePlayer.model_id,
+        blackPlayerModelId: battle.blackPlayer.model_id,
         lastInvalidMoves,
       });
 
@@ -93,7 +91,7 @@ export const BattleTask = schemaTask({
 
       await db.insert(schema.move).values({
         id: nanoid(),
-        battle_d: payload.battleId,
+        battle_id: payload.battleId,
         user_id: payload.userId,
         player_id: playerId,
         move: nextMoveResult.output.move,
@@ -101,6 +99,7 @@ export const BattleTask = schemaTask({
         is_valid: isValid,
         tokens_in: nextMoveResult.output.tokensIn,
         tokens_out: nextMoveResult.output.tokensOut,
+        response_time: nextMoveResult.output.responseTime,
       });
 
       if (chess.isGameOver()) {
@@ -110,19 +109,41 @@ export const BattleTask = schemaTask({
 
     // Log game completion
     const totalMoves = chess.history().length;
-    let outcome = "Unknown";
 
+    let winner: string | null = null;
+    let outcome: "win" | "draw" | null = null;
     if (chess.isCheckmate()) {
-      outcome = `🏆 ${
-        chess.turn() === "w" ? "Black" : "White"
-      } wins by checkmate!`;
-    } else if (chess.isStalemate()) {
-      outcome = "🤝 Game ended in stalemate";
-    } else if (chess.isDraw()) {
-      outcome = "🤝 Game ended in draw";
+      winner =
+        chess.turn() === "w" ? battle.blackPlayer.id : battle.whitePlayer.id;
+      outcome = "win";
     } else {
-      outcome = "⏰ Game reached move limit (10 moves)";
+      // If the game is a draw, we need to determine the winner based on the response time.
+      outcome = "draw";
+      const moves = await db.query.move.findMany({
+        where: and(eq(schema.move.battle_id, payload.battleId)),
+      });
+
+      const responseTimeWhite = moves
+        .filter((m) => m.player_id === battle.whitePlayer.id)
+        .reduce((acc, move) => acc + move.response_time, 0);
+
+      const responseTimeBlack = moves
+        .filter((m) => m.player_id === battle.blackPlayer.id)
+        .reduce((acc, move) => acc + move.response_time, 0);
+
+      winner =
+        responseTimeWhite < responseTimeBlack
+          ? battle.white_player_id
+          : battle.black_player_id;
     }
+
+    await db
+      .update(schema.battle)
+      .set({
+        outcome,
+        winner: winner === battle.white_player_id ? "white" : "black",
+      })
+      .where(eq(schema.battle.id, payload.battleId));
 
     logger.info(
       `${outcome} Final position: ${
@@ -135,6 +156,7 @@ export const BattleTask = schemaTask({
       finalFen: chess.fen(),
       outcome,
       totalMoves,
+      winner,
     };
   },
 });

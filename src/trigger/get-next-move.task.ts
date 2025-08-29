@@ -21,6 +21,8 @@ export const GetNextMoveTask = schemaTask({
 
     const validMoves = chess.moves();
 
+    const initialTime = Date.now();
+
     const generateMoveResult = await generateObject({
       model: playerModelId,
       output: "enum",
@@ -71,7 +73,10 @@ Make your move:`,
       },
     });
 
+    const responseTime = Date.now() - initialTime;
+
     return {
+      responseTime,
       move: generateMoveResult.object,
       tokensIn: generateMoveResult.usage?.inputTokens,
       tokensOut: generateMoveResult.usage?.outputTokens,

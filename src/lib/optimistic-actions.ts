@@ -1,6 +1,11 @@
 import { createOptimisticAction } from "@tanstack/react-db";
 import { nanoid } from "@/lib/nanoid";
-import { battlesCollection, playersCollection, movesByBattleCollection, battleByIdCollection } from "@/lib/collections";
+import {
+  battlesCollection,
+  playersCollection,
+  movesByBattleCollection,
+  battleByIdCollection,
+} from "@/lib/collections";
 
 export type StartBattleOptimisticInput = {
   whitePlayerModelId: string;
@@ -16,7 +21,7 @@ export type StartBattleOptimisticIds = {
 
 // Applies local optimistic inserts and returns the placeholder IDs.
 export function createStartBattleOptimistic(
-  submit: (formData: FormData) => Promise<unknown> | void,
+  submit: (formData: FormData) => Promise<unknown> | void
 ) {
   return createOptimisticAction<StartBattleOptimisticInput>({
     onMutate: (input) => {
@@ -40,10 +45,12 @@ export function createStartBattleOptimistic(
 
       battlesCollection.insert({
         id: battleId,
+
         user_id: "local",
         white_player_id: whitePlayerId,
         black_player_id: blackPlayerId,
         created_at: now,
+        tournament_id: null,
       });
 
       // Also seed per-battle collections so the battle page renders instantly
@@ -53,13 +60,15 @@ export function createStartBattleOptimistic(
         white_player_id: whitePlayerId,
         black_player_id: blackPlayerId,
         created_at: now,
+        tournament_id: null,
       });
       // Insert a synthetic START move so the board shows immediately
-      const INITIAL_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+      const INITIAL_FEN =
+        "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
       movesByBattleCollection(battleId).insert({
         id: `START-${battleId}`,
         user_id: "local",
-        battle_d: battleId,
+        battle_id: battleId,
         player_id: whitePlayerId,
         move: "START",
         state: INITIAL_FEN,
@@ -84,5 +93,3 @@ export function createStartBattleOptimistic(
     },
   });
 }
-
-

@@ -26,7 +26,7 @@ export default function BattleSetup() {
 
   const optimisticStart = React.useMemo(
     () => createStartBattleOptimistic(action),
-    [action],
+    [action]
   );
 
   React.useEffect(() => {
@@ -49,10 +49,14 @@ export default function BattleSetup() {
         <CardContent className="space-y-6">
           <SignedOut>
             <div className="terminal-text text-sm bg-yellow-950/30 border border-yellow-700/40 rounded-md p-3">
-              You can start one battle as a guest. Sign in to create unlimited battles and keep your history.
+              You can start one battle as a guest. Sign in to create unlimited
+              battles and keep your history.
               <div className="mt-2">
                 <SignInButton mode="modal">
-                  <button className="terminal-border bg-terminal-card px-3 py-2 rounded-md hover:bg-terminal-card/80">
+                  <button
+                    type="button"
+                    className="terminal-border bg-terminal-card px-3 py-2 rounded-md hover:bg-terminal-card/80"
+                  >
                     Sign in
                   </button>
                 </SignInButton>

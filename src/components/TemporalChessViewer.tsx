@@ -1,13 +1,18 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useShape } from "@electric-sql/react";
+import { useLiveQuery, eq } from "@tanstack/react-db";
 import { Chessboard, defaultPieces } from "react-chessboard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type * as schema from "@/db/schema";
+import {
+  movesByBattleCollection,
+  battleByIdCollection,
+  playerByIdCollection,
+} from "@/lib/collections";
 
 interface TemporalChessViewerProps {
   battleId: string;
@@ -27,23 +32,28 @@ export default function TemporalChessViewer({
   const [autoFollow, setAutoFollow] = useState(true);
   const moveLogRef = useRef<HTMLDivElement | null>(null);
 
-  const { isLoading: movesLoading, data: movesData } =
-    useShape<schema.MoveSelect>({
-      url: `${process.env.NEXT_PUBLIC_URL}/api/shapes/battles/${battleId}/moves`,
-    });
+  const { data: battleData, isLoading: battleLoading } = useLiveQuery(
+    (q) => q.from({ battle: battleByIdCollection(battleId) }),
+    [battleId],
+  );
 
-  const { isLoading: battleLoading, data: battleData } =
-    useShape<schema.BattleSelect>({
-      url: `${process.env.NEXT_PUBLIC_URL}/api/shapes/battles/${battleId}`,
-    });
+  const whiteId = battleData?.[0]?.white_player_id;
+  const blackId = battleData?.[0]?.black_player_id;
 
-  const { data: whitePlayerData } = useShape<schema.PlayerSelect>({
-    url: `${process.env.NEXT_PUBLIC_URL}/api/shapes/players/${battleData?.[0]?.white_player_id}`,
-  });
+  const { data: movesData, isLoading: movesLoading } = useLiveQuery(
+    (q) => q.from({ move: movesByBattleCollection(battleId) }),
+    [battleId],
+  );
 
-  const { data: blackPlayerData } = useShape<schema.PlayerSelect>({
-    url: `${process.env.NEXT_PUBLIC_URL}/api/shapes/players/${battleData?.[0]?.black_player_id}`,
-  });
+  const { data: whitePlayerData } = useLiveQuery(
+    (q) => q.from({ player: playerByIdCollection(whiteId ?? "__none__") }),
+    [whiteId],
+  );
+
+  const { data: blackPlayerData } = useLiveQuery(
+    (q) => q.from({ player: playerByIdCollection(blackId ?? "__none__") }),
+    [blackId],
+  );
 
   useEffect(() => {
     // Always include a zero-state START entry before any moves

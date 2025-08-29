@@ -59,7 +59,9 @@ export async function StartBattleAction(
       }
     }
 
-    const battleId = nanoid();
+    // Accept client-provided optimistic battleId when available
+    const requestedBattleId = formData.get("battleId")?.toString();
+    const battleId = requestedBattleId || nanoid();
 
     const userId = await getUser();
 

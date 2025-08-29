@@ -8,6 +8,8 @@ import { StartBattleAction } from "@/actions/start-battle.action";
 import { MODELS } from "@/lib/models";
 import { Button } from "@/components/ui/button";
 import { SignedOut, SignInButton } from "@clerk/nextjs";
+import { createStartBattleOptimistic } from "@/lib/optimistic-actions";
+import { nanoid } from "nanoid";
 
 export default function BattleSetup() {
   const router = useRouter();
@@ -21,6 +23,11 @@ export default function BattleSetup() {
       error: "",
     },
   });
+
+  const optimisticStart = React.useMemo(
+    () => createStartBattleOptimistic(action),
+    [action],
+  );
 
   React.useEffect(() => {
     if (state.output.success && "data" in state.output) {
@@ -100,7 +107,21 @@ export default function BattleSetup() {
             </select>
           </div>
 
-          <form action={action}>
+          <form
+            action={async (formData) => {
+              if (whiteModel && blackModel) {
+                const id = nanoid();
+                optimisticStart({
+                  whitePlayerModelId: whiteModel,
+                  blackPlayerModelId: blackModel,
+                  battleId: id,
+                });
+                // Navigate immediately to optimistic route
+                router.push(`/battles/${id}`);
+              }
+              void action(formData);
+            }}
+          >
             <input type="hidden" name="whitePlayerModelId" value={whiteModel} />
             <input type="hidden" name="blackPlayerModelId" value={blackModel} />
             <Button

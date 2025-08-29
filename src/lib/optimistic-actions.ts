@@ -66,6 +66,8 @@ export function createStartBattleOptimistic(
         is_valid: true,
         tokens_in: null as unknown as number,
         tokens_out: null as unknown as number,
+        confidence: null as unknown as number,
+        reasoning: null as unknown as string,
         created_at: now,
       });
       // We trigger the server action in mutationFn to avoid duplicate submissions here

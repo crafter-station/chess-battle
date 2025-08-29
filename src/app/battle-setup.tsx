@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import * as React from "react";
 import { StartBattleAction } from "@/actions/start-battle.action";
 import { MODELS } from "@/lib/models";
+import { ModelSelect } from "@/components/ModelSelect";
 import { Button } from "@/components/ui/button";
 import { SignedOut, SignInButton } from "@clerk/nextjs";
 import { createStartBattleOptimistic } from "@/lib/optimistic-actions";
@@ -15,6 +16,30 @@ export default function BattleSetup() {
   const router = useRouter();
   const [whiteModel, setWhiteModel] = React.useState<string>("");
   const [blackModel, setBlackModel] = React.useState<string>("");
+  const [catalog, setCatalog] = React.useState<Array<{
+    canonical_id: string;
+    name: string | null;
+    description: string | null;
+    logo_url: string | null;
+  }>>([]);
+
+  React.useEffect(() => {
+    // Fetch models from our catalog API; fallback to static MODELS if empty
+    fetch("/api/shapes/models")
+      .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
+      .then((data) => {
+        const list = (data?.models ?? []) as any[];
+        setCatalog(
+          list.map((m) => ({
+            canonical_id: m.canonical_id,
+            name: m.name ?? null,
+            description: m.description ?? null,
+            logo_url: m.logo_url ?? null,
+          })),
+        );
+      })
+      .catch(() => setCatalog([]));
+  }, []);
 
   const [state, action, isPending] = React.useActionState(StartBattleAction, {
     input: {},
@@ -57,52 +82,28 @@ export default function BattleSetup() {
             </div>
           </SignedOut>
           {/* White Player Selection */}
-          <div className="space-y-2">
-            <Label
-              htmlFor="white-model"
-              className="terminal-text font-mono text-sm"
-            >
-              ♔ WHITE PLAYER MODEL
-            </Label>
-            <select
-              value={whiteModel}
-              onChange={(e) => setWhiteModel(e.target.value)}
-              className="w-full terminal-border bg-terminal-card terminal-text px-3 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-terminal-accent"
-            >
-              <option value="" disabled>
-                Select model for White player
-              </option>
-              {MODELS.map((model) => (
-                <option key={model} value={model} className="bg-terminal-card">
-                  {model}
-                </option>
-              ))}
-            </select>
-          </div>
+          <ModelSelect
+            label="♔ WHITE PLAYER MODEL"
+            items={(catalog.length > 0
+              ? catalog
+              : MODELS.map((m) => ({ canonical_id: m, name: m, description: null, logo_url: null }))
+            ) as any}
+            value={whiteModel}
+            onChange={setWhiteModel}
+            placeholder="Select model for White player"
+          />
 
           {/* Black Player Selection */}
-          <div className="space-y-2">
-            <Label
-              htmlFor="black-model"
-              className="terminal-text font-mono text-sm"
-            >
-              ♛ BLACK PLAYER MODEL
-            </Label>
-            <select
-              value={blackModel}
-              onChange={(e) => setBlackModel(e.target.value)}
-              className="w-full terminal-border bg-terminal-card terminal-text px-3 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-terminal-accent"
-            >
-              <option value="" disabled>
-                Select model for Black player
-              </option>
-              {MODELS.map((model) => (
-                <option key={model} value={model} className="bg-terminal-card">
-                  {model}
-                </option>
-              ))}
-            </select>
-          </div>
+          <ModelSelect
+            label="♛ BLACK PLAYER MODEL"
+            items={(catalog.length > 0
+              ? catalog
+              : MODELS.map((m) => ({ canonical_id: m, name: m, description: null, logo_url: null }))
+            ) as any}
+            value={blackModel}
+            onChange={setBlackModel}
+            placeholder="Select model for Black player"
+          />
 
           <form
             action={async (formData) => {
@@ -139,6 +140,7 @@ export default function BattleSetup() {
           )}
         </CardContent>
       </Card>
+      {/* ModelSelect renders its own preview in the dropdown */}
     </div>
   );
 }

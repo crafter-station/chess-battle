@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { PlayerCard } from "@/components/PlayerCard";
 import type * as schema from "@/db/schema";
 import { movesByBattleCollection, battleByIdCollection, playerByIdCollection } from "@/lib/collections";
 import { buildMovesWithPlayersQuery, type MoveWithPlayer } from "@/lib/queries";
@@ -379,37 +380,16 @@ export default function TemporalChessViewer({
 
         {/* Player Information */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Card className="terminal-card terminal-border">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <Badge
-                  variant={isWhiteMove ? "default" : "secondary"}
-                  className="terminal-text"
-                >
-                  WHITE
-                </Badge>
-                <span className="terminal-text font-mono text-sm">
-                  {whitePlayerData?.[0]?.model_id}
-                </span>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="terminal-card terminal-border">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <Badge
-                  variant={!isWhiteMove ? "default" : "secondary"}
-                  className="terminal-text"
-                >
-                  BLACK
-                </Badge>
-                <span className="terminal-text font-mono text-sm">
-                  {blackPlayerData?.[0]?.model_id}
-                </span>
-              </div>
-            </CardContent>
-          </Card>
+          <PlayerCard
+            color="WHITE"
+            modelId={whitePlayerData?.[0]?.model_id}
+            isActive={isWhiteMove}
+          />
+          <PlayerCard
+            color="BLACK"
+            modelId={blackPlayerData?.[0]?.model_id}
+            isActive={!isWhiteMove}
+          />
         </div>
 
         {/* Main Chess Viewer */}

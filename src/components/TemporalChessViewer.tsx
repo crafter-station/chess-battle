@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import { Chess } from "chess.js";
 import { useLiveQuery, eq } from "@tanstack/react-db";
 import { Chessboard, defaultPieces } from "react-chessboard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,6 +20,11 @@ export default function TemporalChessViewer({
   battleId,
 }: TemporalChessViewerProps) {
   const [currentMoveIndex, setCurrentMoveIndex] = useState(0);
+  const [soundEnabled, setSoundEnabled] = useState(false);
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const masterGainRef = useRef<GainNode | null>(null);
+  const [hasPlayedVictory, setHasPlayedVictory] = useState(false);
+  const [gameOverInfo, setGameOverInfo] = useState<{ over: boolean; winner?: "White" | "Black"; draw?: boolean }>({ over: false });
   // Minimal extension so we can add a synthetic START entry
   type TimelineMove = Pick<schema.MoveSelect, "id" | "state" | "is_valid" | "move" | "tokens_in" | "tokens_out"> & {
     isSynthetic?: boolean;
@@ -151,6 +157,121 @@ export default function TemporalChessViewer({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [goToPreviousMove, goToNextMove, goToStart, goToEnd]);
 
+  const ensureAudio = useCallback(async () => {
+    if (typeof window === "undefined") return null;
+    // @ts-expect-error - webkit prefix for Safari
+    const AC: typeof AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (!audioCtxRef.current && AC) {
+      const ctx = new AC();
+      const gain = ctx.createGain();
+      gain.gain.value = 0.15;
+      gain.connect(ctx.destination);
+      audioCtxRef.current = ctx;
+      masterGainRef.current = gain;
+    }
+    if (audioCtxRef.current && audioCtxRef.current.state !== "running") {
+      try {
+        await audioCtxRef.current.resume();
+      } catch {}
+    }
+    return audioCtxRef.current;
+  }, []);
+
+  const playBeep = useCallback(
+    (freq = 560, durationMs = 80, volume = 0.12) => {
+      if (!soundEnabled) return;
+      const ctx = audioCtxRef.current;
+      const master = masterGainRef.current;
+      if (!ctx || !master) return;
+      const osc = ctx.createOscillator();
+      const env = ctx.createGain();
+      osc.type = "square";
+      osc.frequency.value = freq;
+      env.gain.setValueAtTime(0, ctx.currentTime);
+      env.gain.linearRampToValueAtTime(volume, ctx.currentTime + 0.005);
+      env.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + durationMs / 1000);
+      osc.connect(env);
+      env.connect(master);
+      osc.start();
+      osc.stop(ctx.currentTime + durationMs / 1000 + 0.02);
+    },
+    [soundEnabled]
+  );
+
+  const playVictory = useCallback(() => {
+    if (!soundEnabled) return;
+    const ctx = audioCtxRef.current;
+    const master = masterGainRef.current;
+    if (!ctx || !master) return;
+    const notes = [523.25, 659.25, 783.99]; // C5-E5-G5
+    const startAt = ctx.currentTime;
+    notes.forEach((freq, index) => {
+      const osc = ctx.createOscillator();
+      const env = ctx.createGain();
+      osc.type = "square";
+      osc.frequency.value = freq;
+      const t0 = startAt + index * 0.12;
+      env.gain.setValueAtTime(0, t0);
+      env.gain.linearRampToValueAtTime(0.12, t0 + 0.01);
+      env.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.18);
+      osc.connect(env);
+      env.connect(master);
+      osc.start(t0);
+      osc.stop(t0 + 0.2);
+    });
+  }, [soundEnabled]);
+
+  // Hooks below must remain before any early returns to preserve hook order
+  // Play a short beep for valid moves when index changes forward/back
+  const prevIndexRef = useRef(0);
+  useEffect(() => {
+    if (currentMoveIndex !== prevIndexRef.current) {
+      const move = moves[currentMoveIndex];
+      if (move && move.id !== "START" && move.is_valid) {
+        void ensureAudio()?.then(() => {
+          const sideIsWhite = currentMoveIndex === 0 ? true : currentMoveIndex % 2 === 1;
+          playBeep(sideIsWhite ? 600 : 520, 70, 0.14);
+        });
+      }
+      prevIndexRef.current = currentMoveIndex;
+    }
+  }, [currentMoveIndex, moves, ensureAudio, playBeep]);
+
+  // Detect game over from final FEN
+  useEffect(() => {
+    if (!moves.length) return;
+    const last = moves[moves.length - 1];
+    if (!last || last.id === "START") return;
+    try {
+      const chess = new Chess(last.state);
+      if (chess.isGameOver()) {
+        let winner: "White" | "Black" | undefined;
+        let draw = false;
+        if (chess.isCheckmate()) {
+          winner = chess.turn() === "w" ? "Black" : "White";
+        } else {
+          draw = true;
+        }
+        setGameOverInfo({ over: true, winner, draw });
+      } else {
+        setGameOverInfo({ over: false });
+        setHasPlayedVictory(false);
+      }
+    } catch {
+      // Ignore parse errors
+    }
+  }, [moves]);
+
+  // Play a short victory tone once
+  useEffect(() => {
+    if (gameOverInfo.over && !hasPlayedVictory) {
+      void ensureAudio()?.then(() => {
+        playVictory();
+        setHasPlayedVictory(true);
+      });
+    }
+  }, [gameOverInfo.over, hasPlayedVictory, ensureAudio, playVictory]);
+
   const isLoading = movesLoading || battleLoading;
 
   if (isLoading) {
@@ -183,6 +304,8 @@ export default function TemporalChessViewer({
   const playerColor = isWhiteMove ? "White" : "Black";
   const progressPercentage =
     moves.length > 1 ? (currentMoveIndex / (moves.length - 1)) * 100 : 0;
+
+  
 
   // Terminal-themed custom pieces: add green glow/border to black pieces
   const terminalPieces = {
@@ -292,7 +415,7 @@ export default function TemporalChessViewer({
           {/* Chess Board */}
           <div className="lg:col-span-2 flex justify-center">
             <Card className="terminal-card terminal-border p-4">
-              <div className="w-full max-w-md">
+              <div className="w-full max-w-md relative">
                 <Chessboard
                   key={currentMove.id}
                   options={{
@@ -346,6 +469,27 @@ export default function TemporalChessViewer({
                     },
                   }}
                 />
+                {gameOverInfo.over && (
+                  <div className="absolute inset-0 flex items-center justify-center rounded-md bg-black/70">
+                    <div className="text-center">
+                      <div className="terminal-text terminal-glow text-2xl md:text-3xl font-mono animate-pulse">
+                        {gameOverInfo.draw
+                          ? "DRAW"
+                          : `${(gameOverInfo.winner ?? "").toUpperCase()} WINS`}
+                      </div>
+                      {!gameOverInfo.draw && (
+                        <div className="terminal-text text-xs md:text-sm opacity-80 mt-1">
+                          {gameOverInfo.winner === "White"
+                            ? whitePlayerData?.[0]?.model_id
+                            : blackPlayerData?.[0]?.model_id}
+                        </div>
+                      )}
+                      <div className="terminal-text text-[10px] md:text-xs opacity-60 mt-2">
+                        Review with PREV/NEXT
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </Card>
           </div>
@@ -483,6 +627,20 @@ export default function TemporalChessViewer({
                       className="terminal-button terminal-text px-3 py-1"
                     >
                       {autoFollow ? "ON" : "OFF"}
+                    </Button>
+                  </div>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="terminal-text opacity-70">SOUND</span>
+                    <Button
+                      type="button"
+                      onClick={async () => {
+                        await ensureAudio();
+                        setSoundEnabled((v) => !v);
+                      }}
+                      variant={soundEnabled ? "default" : "outline"}
+                      className="terminal-button terminal-text px-3 py-1"
+                    >
+                      {soundEnabled ? "ON" : "OFF"}
                     </Button>
                   </div>
                 </div>

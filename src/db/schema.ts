@@ -10,8 +10,8 @@ import {
 
 const defaultUserId = "user_web";
 
-export const BattleOutcomeEnum = pgEnum("battle_outcome", ["win", "draw"]);
-export const PlayerEnum = pgEnum("player", ["white", "black"]);
+export const BattleOutcomeEnum = pgEnum("battle_outcome_enum", ["win", "draw"]);
+export const PlayerEnum = pgEnum("player_enum", ["white", "black"]);
 
 export const battle = pgTable("battle", {
   id: text("id").primaryKey(),
@@ -46,7 +46,7 @@ export const move = pgTable("move", {
     .notNull()
     .references(() => player.id),
 
-  move: text("move").notNull(),
+  move: text("move"),
   // State after the move is applied, FEN string.
   // If the move is invalid, the state is the same as the previous state.
   state: text("state").notNull(),
@@ -71,6 +71,7 @@ export const player = pgTable("player", {
 });
 
 export type PlayerSelect = typeof player.$inferSelect;
+export type PlayerInsert = typeof player.$inferInsert;
 
 export const tournament = pgTable("tournament", {
   id: text("id").primaryKey(),

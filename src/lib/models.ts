@@ -89,4 +89,6 @@ export const MODELS = [
   "zai/glm-4.5",
   "zai/glm-4.5-air",
   "zai/glm-4.5v",
-];
+] as const;
+
+export type Model = (typeof MODELS)[number];

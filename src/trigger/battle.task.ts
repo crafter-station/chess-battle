@@ -64,29 +64,42 @@ export const BattleTask = schemaTask({
 
       let isValid = true;
 
-      try {
-        chess.move(nextMoveResult.output.move);
+      if (nextMoveResult.output.move) {
+        try {
+          chess.move(nextMoveResult.output.move);
 
-        logger.info(
-          `${currentPlayer} (Move ${moveNumber}): ${
-            nextMoveResult.output.move
-          } - Position: ${chess.fen().split(" ")[0]}`
-        );
-      } catch (error) {
-        if (error instanceof Error && error.message.includes("Invalid move")) {
-          logger.error(
-            `${currentPlayer} (Move ${moveNumber}): ❌ Invalid move "${nextMoveResult.output.move}" - ${error.message}. Retrying...`
+          logger.info(
+            `${currentPlayer} (Move ${moveNumber}): ${
+              nextMoveResult.output.move
+            } - Position: ${chess.fen().split(" ")[0]}`
           );
-        } else {
+        } catch (error) {
           isValid = false;
-          throw error;
+          if (
+            error instanceof Error &&
+            error.message.includes("Invalid move")
+          ) {
+            logger.error(
+              `${currentPlayer} (Move ${moveNumber}): ❌ Invalid move "${nextMoveResult.output.move}" - ${error.message}. Retrying...`
+            );
+          } else {
+            throw error;
+          }
         }
+      } else {
+        logger.error(
+          `${currentPlayer} (Move ${moveNumber}): ❌ No move returned.`
+        );
+        isValid = false;
       }
 
       if (isValid) {
         lastInvalidMoves = [];
       } else {
-        lastInvalidMoves = [...lastInvalidMoves, nextMoveResult.output.move];
+        lastInvalidMoves = [
+          nextMoveResult.output.move ?? "",
+          ...lastInvalidMoves,
+        ];
       }
 
       await db.insert(schema.move).values({
@@ -94,13 +107,44 @@ export const BattleTask = schemaTask({
         battle_id: payload.battleId,
         user_id: payload.userId,
         player_id: playerId,
-        move: nextMoveResult.output.move,
+        move: nextMoveResult.output.move ?? null,
         state: chess.fen(),
         is_valid: isValid,
         tokens_in: nextMoveResult.output.tokensIn,
         tokens_out: nextMoveResult.output.tokensOut,
         response_time: nextMoveResult.output.responseTime,
       });
+
+      if (lastInvalidMoves.length > 2) {
+        logger.warn(
+          `🤖 Too many invalid moves: ${lastInvalidMoves.join(
+            ", "
+          )}. Let's make a move ourselves.`
+        );
+        const randomMove =
+          chess.moves()[Math.floor(Math.random() * chess.moves().length)];
+        chess.move(randomMove);
+        logger.info(
+          `🤖 Random move: ${randomMove} - Position: ${
+            chess.fen().split(" ")[0]
+          }`
+        );
+        isValid = true;
+        lastInvalidMoves = [];
+
+        await db.insert(schema.move).values({
+          id: nanoid(),
+          battle_id: payload.battleId,
+          user_id: payload.userId,
+          player_id: playerId,
+          move: randomMove,
+          state: chess.fen(),
+          is_valid: true,
+          tokens_in: 0,
+          tokens_out: 0,
+          response_time: 0,
+        });
+      }
 
       if (chess.isGameOver()) {
         break;

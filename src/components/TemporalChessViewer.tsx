@@ -26,7 +26,7 @@ export default function TemporalChessViewer({
   const [hasPlayedVictory, setHasPlayedVictory] = useState(false);
   const [gameOverInfo, setGameOverInfo] = useState<{ over: boolean; winner?: "White" | "Black"; draw?: boolean }>({ over: false });
   // Minimal extension so we can add a synthetic START entry
-  type TimelineMove = Pick<schema.MoveSelect, "id" | "state" | "is_valid" | "move" | "tokens_in" | "tokens_out"> & {
+  type TimelineMove = Pick<schema.MoveSelect, "id" | "state" | "is_valid" | "move" | "tokens_in" | "tokens_out" | "confidence" | "reasoning"> & {
     isSynthetic?: boolean;
     player_model_id?: string | null;
   };
@@ -76,6 +76,8 @@ export default function TemporalChessViewer({
         is_valid: true,
         tokens_in: null,
         tokens_out: null,
+        confidence: null as unknown as number,
+        reasoning: null as unknown as string,
         isSynthetic: true,
       };
       const augmented: TimelineMove[] = [startEntry, ...joinedOrBase];
@@ -565,6 +567,22 @@ export default function TemporalChessViewer({
                       </span>
                     </div>
                   )}
+                  {typeof currentMove.confidence === "number" && (
+                    <div className="flex justify-between">
+                      <span className="terminal-text opacity-70">CONFIDENCE:</span>
+                      <span className="terminal-text">
+                        {currentMove.confidence}%
+                      </span>
+                    </div>
+                  )}
+                  {currentMove.reasoning && (
+                    <div className="mt-2 p-2 rounded border border-dashed border-[var(--border)] bg-[var(--card)]/50">
+                      <div className="terminal-text text-[10px] opacity-70 mb-1">RATIONALE</div>
+                      <div className="terminal-text text-xs opacity-80 line-clamp-3">
+                        {currentMove.reasoning}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -682,6 +700,9 @@ export default function TemporalChessViewer({
                       <span className="ml-2">{index === 0 ? "—" : move.move}</span>
                       {index !== 0 && move.player_model_id && (
                         <span className="ml-2 opacity-60">[{move.player_model_id}]</span>
+                      )}
+                      {index !== 0 && typeof move.confidence === "number" && (
+                        <span className="ml-2 opacity-50">{move.confidence}%</span>
                       )}
                       {!move.is_valid && (
                         <span className="ml-2 text-red-400">[ERR]</span>

@@ -91,17 +91,34 @@ export const BattleTask = schemaTask({
         lastInvalidMoves = [...lastInvalidMoves, nextMoveResult.output.move];
       }
 
-      await db.insert(schema.move).values({
-        id: nanoid(),
-        battle_d: payload.battleId,
-        user_id: payload.userId,
-        player_id: playerId,
-        move: nextMoveResult.output.move,
-        state: chess.fen(),
-        is_valid: isValid,
-        tokens_in: nextMoveResult.output.tokensIn,
-        tokens_out: nextMoveResult.output.tokensOut,
-      });
+      try {
+        await db.insert(schema.move).values({
+          id: nanoid(),
+          battle_d: payload.battleId,
+          user_id: payload.userId,
+          player_id: playerId,
+          move: nextMoveResult.output.move,
+          state: chess.fen(),
+          is_valid: isValid,
+          tokens_in: nextMoveResult.output.tokensIn,
+          tokens_out: nextMoveResult.output.tokensOut,
+          confidence: nextMoveResult.output.confidence ?? null,
+          reasoning: nextMoveResult.output.reasoning ?? null,
+        });
+      } catch (e) {
+        // Fallback if DB hasn't been migrated to include confidence/reasoning
+        await db.insert(schema.move).values({
+          id: nanoid(),
+          battle_d: payload.battleId,
+          user_id: payload.userId,
+          player_id: playerId,
+          move: nextMoveResult.output.move,
+          state: chess.fen(),
+          is_valid: isValid,
+          tokens_in: nextMoveResult.output.tokensIn,
+          tokens_out: nextMoveResult.output.tokensOut,
+        } as any);
+      }
 
       if (chess.isGameOver()) {
         break;

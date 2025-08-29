@@ -39,6 +39,9 @@ export const move = pgTable("move", {
   tokens_in: integer("tokens_in"),
   tokens_out: integer("tokens_out"),
 
+  confidence: integer("confidence"),
+  reasoning: text("reasoning"),
+
   created_at: timestamp("created_at").notNull().defaultNow(),
 });
 

@@ -39,6 +39,9 @@ export const move = pgTable("move", {
   tokens_in: integer("tokens_in"),
   tokens_out: integer("tokens_out"),
 
+  confidence: integer("confidence"),
+  reasoning: text("reasoning"),
+
   created_at: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -54,3 +57,21 @@ export const player = pgTable("player", {
 });
 
 export type PlayerSelect = typeof player.$inferSelect;
+
+// Simple model catalog for AI Gateway models
+export const ai_model = pgTable("ai_model", {
+  id: text("id").primaryKey(),
+  // e.g. "anthropic/claude-sonnet-4"
+  canonical_id: text("canonical_id").notNull().unique(),
+  provider: text("provider").notNull(),
+  name: text("name").notNull(),
+  description: text("description"),
+  // First logo URL if available
+  logo_url: text("logo_url"),
+  // The public model details page on Vercel AI Gateway
+  models_url: text("models_url"),
+  chat_url: text("chat_url"),
+  updated_at: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export type AiModelSelect = typeof ai_model.$inferSelect;

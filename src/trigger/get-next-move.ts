@@ -69,6 +69,7 @@ Make your move:`,
       experimental_telemetry: {
         isEnabled: true,
       },
+      temperature: 0.1,
     });
 
     return {

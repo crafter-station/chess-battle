@@ -1,4 +1,4 @@
-import TemporalChessViewer from "@/components/TemporalChessViewer";
+import TemporalChessViewerClient from "@/components/TemporalChessViewerClient";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SignedOut, SignInButton } from "@clerk/nextjs";
 
@@ -8,6 +8,7 @@ export default async function Page({
   params: Promise<{ battle_id: string }>;
 }) {
   const { battle_id } = await params;
+  // Client-only viewer wrapper
 
   return (
     <div className="min-h-screen terminal-card crt-flicker">
@@ -51,7 +52,7 @@ export default async function Page({
           </Card>
         </SignedOut>
       </div>
-      <TemporalChessViewer battleId={battle_id} />
+      <TemporalChessViewerClient battleId={battle_id} />
     </div>
   );
 }

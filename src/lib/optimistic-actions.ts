@@ -1,6 +1,11 @@
 import { createOptimisticAction } from "@tanstack/react-db";
 import { nanoid } from "@/lib/nanoid";
-import { battlesCollection, playersCollection, movesByBattleCollection, battleByIdCollection } from "@/lib/collections";
+import {
+  battlesCollection,
+  playersCollection,
+  movesByBattleCollection,
+  battleByIdCollection,
+} from "@/lib/collections";
 
 export type StartBattleOptimisticInput = {
   whitePlayerModelId: string;
@@ -16,7 +21,7 @@ export type StartBattleOptimisticIds = {
 
 // Applies local optimistic inserts and returns the placeholder IDs.
 export function createStartBattleOptimistic(
-  submit: (formData: FormData) => Promise<unknown> | void,
+  submit: (formData: FormData) => Promise<unknown> | void
 ) {
   return createOptimisticAction<StartBattleOptimisticInput>({
     onMutate: (input) => {
@@ -40,6 +45,11 @@ export function createStartBattleOptimistic(
 
       battlesCollection.insert({
         id: battleId,
+        tournament_id: null,
+        tournament_round: null,
+        tournament_round_position: null,
+        winner: null,
+        outcome: null,
         user_id: "local",
         white_player_id: whitePlayerId,
         black_player_id: blackPlayerId,
@@ -50,24 +60,31 @@ export function createStartBattleOptimistic(
       battleByIdCollection(battleId).insert({
         id: battleId,
         user_id: "local",
+        tournament_id: null,
+        tournament_round: null,
+        tournament_round_position: null,
         white_player_id: whitePlayerId,
         black_player_id: blackPlayerId,
+        winner: null,
+        outcome: null,
         created_at: now,
       });
       // Insert a synthetic START move so the board shows immediately
-      const INITIAL_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+      const INITIAL_FEN =
+        "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
       movesByBattleCollection(battleId).insert({
         id: `START-${battleId}`,
         user_id: "local",
-        battle_d: battleId,
+        battle_id: battleId,
         player_id: whitePlayerId,
         move: "START",
+        response_time: null,
         state: INITIAL_FEN,
         is_valid: true,
-        tokens_in: null as unknown as number,
-        tokens_out: null as unknown as number,
-        confidence: null as unknown as number,
-        reasoning: null as unknown as string,
+        tokens_in: null,
+        tokens_out: null,
+        confidence: null,
+        reasoning: null,
         created_at: now,
       });
       // We trigger the server action in mutationFn to avoid duplicate submissions here
@@ -81,5 +98,3 @@ export function createStartBattleOptimistic(
     },
   });
 }
-
-

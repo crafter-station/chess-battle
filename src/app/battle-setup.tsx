@@ -1,7 +1,6 @@
 "use client";
 
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
 import { useRouter } from "next/navigation";
 import * as React from "react";
 import { StartBattleAction } from "@/actions/start-battle.action";
@@ -16,12 +15,14 @@ export default function BattleSetup() {
   const router = useRouter();
   const [whiteModel, setWhiteModel] = React.useState<string>("");
   const [blackModel, setBlackModel] = React.useState<string>("");
-  const [catalog, setCatalog] = React.useState<Array<{
-    canonical_id: string;
-    name: string | null;
-    description: string | null;
-    logo_url: string | null;
-  }>>([]);
+  const [catalog, setCatalog] = React.useState<
+    Array<{
+      canonical_id: string;
+      name: string | null;
+      description: string | null;
+      logo_url: string | null;
+    }>
+  >([]);
 
   React.useEffect(() => {
     // Fetch models from our catalog API; fallback to static MODELS if empty
@@ -35,7 +36,7 @@ export default function BattleSetup() {
             name: m.name ?? null,
             description: m.description ?? null,
             logo_url: m.logo_url ?? null,
-          })),
+          }))
         );
       })
       .catch(() => setCatalog([]));
@@ -49,7 +50,10 @@ export default function BattleSetup() {
     },
   });
 
-  const optimisticStart = React.useMemo(() => createStartBattleOptimistic(action), [action]);
+  const optimisticStart = React.useMemo(
+    () => createStartBattleOptimistic(action),
+    [action]
+  );
 
   React.useEffect(() => {
     if (state.output.success && "data" in state.output) {
@@ -71,10 +75,14 @@ export default function BattleSetup() {
         <CardContent className="space-y-6">
           <SignedOut>
             <div className="terminal-text text-sm bg-yellow-950/30 border border-yellow-700/40 rounded-md p-3">
-              You can start one battle as a guest. Sign in to create unlimited battles and keep your history.
+              You can start one battle as a guest. Sign in to create unlimited
+              battles and keep your history.
               <div className="mt-2">
                 <SignInButton mode="modal">
-                  <button className="terminal-border bg-terminal-card px-3 py-2 rounded-md hover:bg-terminal-card/80">
+                  <button
+                    type="button"
+                    className="terminal-border bg-terminal-card px-3 py-2 rounded-md hover:bg-terminal-card/80"
+                  >
                     Sign in
                   </button>
                 </SignInButton>
@@ -84,10 +92,16 @@ export default function BattleSetup() {
           {/* White Player Selection */}
           <ModelSelect
             label="♔ WHITE PLAYER MODEL"
-            items={(catalog.length > 0
-              ? catalog
-              : MODELS.map((m) => ({ canonical_id: m, name: m, description: null, logo_url: null }))
-            ) as any}
+            items={
+              (catalog.length > 0
+                ? catalog
+                : MODELS.map((m) => ({
+                    canonical_id: m,
+                    name: m,
+                    description: null,
+                    logo_url: null,
+                  }))) as any
+            }
             value={whiteModel}
             onChange={setWhiteModel}
             placeholder="Select model for White player"
@@ -96,10 +110,16 @@ export default function BattleSetup() {
           {/* Black Player Selection */}
           <ModelSelect
             label="♛ BLACK PLAYER MODEL"
-            items={(catalog.length > 0
-              ? catalog
-              : MODELS.map((m) => ({ canonical_id: m, name: m, description: null, logo_url: null }))
-            ) as any}
+            items={
+              (catalog.length > 0
+                ? catalog
+                : MODELS.map((m) => ({
+                    canonical_id: m,
+                    name: m,
+                    description: null,
+                    logo_url: null,
+                  }))) as any
+            }
             value={blackModel}
             onChange={setBlackModel}
             placeholder="Select model for Black player"

@@ -18,8 +18,8 @@ export const battle = pgTable("battle", {
   user_id: text("user_id").notNull().default(defaultUserId),
   tournament_id: text("tournament_id").references(() => tournament.id),
 
-  tournament_round: integer("tournament_round").notNull(),
-  tournament_round_position: integer("tournament_round_position").notNull(),
+  tournament_round: integer("tournament_round"),
+  tournament_round_position: integer("tournament_round_position"),
 
   white_player_id: text("white_player_id")
     .notNull()

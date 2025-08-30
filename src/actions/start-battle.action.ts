@@ -1,5 +1,7 @@
 "use server";
 
+import { db } from "@/db";
+import * as schema from "@/db/schema";
 import { getUser } from "@/lib/get-user";
 import { nanoid } from "@/lib/nanoid";
 import { BattleTask } from "@/trigger/battle.task";
@@ -65,11 +67,29 @@ export async function StartBattleAction(
 
     const userId = await getUser();
 
+    const whitePlayerId = nanoid();
+    const blackPlayerId = nanoid();
+
+    await db.insert(schema.player).values({
+      id: whitePlayerId,
+      model_id: input.whitePlayerModelId,
+    });
+
+    await db.insert(schema.player).values({
+      id: blackPlayerId,
+      model_id: input.blackPlayerModelId,
+    });
+
+    await db.insert(schema.battle).values({
+      id: battleId,
+      user_id: userId,
+      white_player_id: whitePlayerId,
+      black_player_id: blackPlayerId,
+    });
+
     await BattleTask.trigger({
       battleId,
       userId,
-      whitePlayerModelId: input.whitePlayerModelId,
-      blackPlayerModelId: input.blackPlayerModelId,
     });
 
     // Increment guest battle count after successful trigger

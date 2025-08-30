@@ -45,22 +45,29 @@ export function createStartBattleOptimistic(
 
       battlesCollection.insert({
         id: battleId,
-
+        tournament_id: null,
+        tournament_round: null,
+        tournament_round_position: null,
+        winner: null,
+        outcome: null,
         user_id: "local",
         white_player_id: whitePlayerId,
         black_player_id: blackPlayerId,
         created_at: now,
-        tournament_id: null,
       });
 
       // Also seed per-battle collections so the battle page renders instantly
       battleByIdCollection(battleId).insert({
         id: battleId,
         user_id: "local",
+        tournament_id: null,
+        tournament_round: null,
+        tournament_round_position: null,
         white_player_id: whitePlayerId,
         black_player_id: blackPlayerId,
+        winner: null,
+        outcome: null,
         created_at: now,
-        tournament_id: null,
       });
       // Insert a synthetic START move so the board shows immediately
       const INITIAL_FEN =
@@ -71,12 +78,13 @@ export function createStartBattleOptimistic(
         battle_id: battleId,
         player_id: whitePlayerId,
         move: "START",
+        response_time: null,
         state: INITIAL_FEN,
         is_valid: true,
-        tokens_in: null as unknown as number,
-        tokens_out: null as unknown as number,
-        confidence: null as unknown as number,
-        reasoning: null as unknown as string,
+        tokens_in: null,
+        tokens_out: null,
+        confidence: null,
+        reasoning: null,
         created_at: now,
       });
       // We trigger the server action in mutationFn to avoid duplicate submissions here

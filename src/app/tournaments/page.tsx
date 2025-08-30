@@ -1,9 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useActionState } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { ModelSelect, type ModelOption } from "@/components/ModelSelect";
 import { MODELS } from "@/lib/models";
+import { StartTournamentAction, type StartTournamentActionState, type TournamentMatch } from "@/actions/start-tournament.action";
 
 type TournamentSize = 4 | 8 | 16 | 32;
 
@@ -31,12 +34,49 @@ const mockModelOptions: ModelOption[] = MODELS.map((model, index) => ({
 }));
 
 export default function TournamentsPage() {
+  const router = useRouter();
   const [tournamentSize, setTournamentSize] = useState<TournamentSize>(8);
   const [brackets, setBrackets] = useState<BracketPosition[]>([]);
   const [selectedPosition, setSelectedPosition] = useState<string | null>(null);
   const [selectedSide, setSelectedSide] = useState<"white" | "black" | null>(
     null
   );
+
+  // Initialize tournament action state
+  const initialState: StartTournamentActionState = {
+    input: {},
+    output: { success: false },
+  };
+  
+  const [actionState, formAction, isPending] = useActionState(
+    StartTournamentAction,
+    initialState
+  );
+
+  // Handle successful tournament creation
+  useEffect(() => {
+    if (actionState.output.success && actionState.output.data?.tournamentId) {
+      // Redirect to tournament view or show success message
+      router.push(`/tournaments/${actionState.output.data.tournamentId}`);
+    }
+  }, [actionState.output, router]);
+
+  // Get tournament data for form submission
+  const getTournamentData = () => {
+    const firstRoundBrackets = brackets.filter((b) => b.round === 0);
+    const matches: TournamentMatch[] = firstRoundBrackets
+      .filter((b) => b.whitePlayer && b.blackPlayer)
+      .map((b) => ({
+        whitePlayerModelId: b.whitePlayer?.modelId || "",
+        blackPlayerModelId: b.blackPlayer?.modelId || "",
+      }));
+
+    return {
+      tournamentName: `${tournamentSize} Player Tournament`,
+      tournamentSize: tournamentSize.toString(),
+      matches: JSON.stringify(matches),
+    };
+  };
 
   // Initialize bracket positions based on tournament size
   useEffect(() => {
@@ -498,19 +538,44 @@ export default function TournamentsPage() {
         </Button>
       </div>
 
-      {/* Start Tournament Button */}
-      {brackets
-        .filter((b) => b.round === 0)
-        .every((b) => b.whitePlayer && b.blackPlayer) && (
-        <div className="flex justify-center mb-8">
-          <Button
-            size="lg"
-            className="bg-gradient-to-r from-yellow-600 to-yellow-500 hover:from-yellow-500 hover:to-yellow-400 text-black font-bold px-8 py-3 text-lg shadow-lg"
-          >
-            ⚔️ START TOURNAMENT
-          </Button>
-        </div>
-      )}
+              {/* Start Tournament Button */}
+        {brackets
+          .filter((b) => b.round === 0)
+          .every((b) => b.whitePlayer && b.blackPlayer) && (
+          <div className="flex justify-center mb-8">
+            <form action={formAction}>
+              {(() => {
+                const tournamentData = getTournamentData();
+                return (
+                  <>
+                    <input type="hidden" name="tournamentName" value={tournamentData.tournamentName} />
+                    <input type="hidden" name="tournamentSize" value={tournamentData.tournamentSize} />
+                    <input type="hidden" name="matches" value={tournamentData.matches} />
+                  </>
+                );
+              })()}
+              <Button
+                type="submit"
+                size="lg"
+                className="bg-gradient-to-r from-yellow-600 to-yellow-500 hover:from-yellow-500 hover:to-yellow-400 text-black font-bold px-8 py-3 text-lg shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={isPending}
+              >
+                {isPending ? "🔄 STARTING..." : "⚔️ START TOURNAMENT"}
+              </Button>
+            </form>
+          </div>
+        )}
+
+        {/* Error Display */}
+        {!actionState.output.success && actionState.output.error && (
+          <div className="flex justify-center mb-8">
+            <div className="bg-red-900/20 border border-red-500/50 rounded-lg p-4 max-w-md">
+              <div className="text-red-400 text-sm font-medium">
+                ❌ {actionState.output.error}
+              </div>
+            </div>
+          </div>
+        )}
 
       {/* Model Selection */}
       {selectedPosition && selectedSide && (

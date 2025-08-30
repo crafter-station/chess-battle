@@ -24,9 +24,25 @@ export const GetNextMoveTask = schemaTask({
     const generateMoveResult = await generateObject({
       model: playerModelId,
       schema: z.object({
-        move: z.string().optional(),
-        reasoning: z.string().max(280).optional(),
-        confidence: z.number().int().min(0).max(100).optional(),
+        move: z
+          .string()
+          .optional()
+          .describe("The best legal move from the provided list"),
+        reasoning: z
+          .string()
+          .optional()
+          .describe(
+            "Brief explanation: MAX 100 words OR 2 sentences (whichever is shorter). Keep it concise."
+          ),
+        confidence: z
+          .number()
+          .int()
+          .min(0)
+          .max(100)
+          .optional()
+          .describe(
+            "Integer confidence score 0-100 (how certain you are about this move)"
+          ),
       }),
       messages: constructMessages(chess, payload.lastInvalidMoves),
       experimental_repairText: async () => {
@@ -59,45 +75,47 @@ function constructMessages(chess: Chess, lastInvalidMoves: string[]) {
   return [
     {
       role: "system",
-      content: `You are a chess grandmaster. Analyze the position and return a short JSON with the best legal move, an optional brief reasoning (max 2 sentences), and an optional confidence from 0-100.
+      content: `You are a chess engine. Analyze the position and return ONLY a JSON object with your move selection.
 
-KEY PRINCIPLES:
-• Evaluate material, piece activity, pawn structure, and king safety
-• Look for tactical opportunities: captures, checks, threats, and combinations
-• Consider development, center control, and long-term strategy
-• Anticipate opponent responses and maintain king safety
+CHESS ANALYSIS:
+• Prioritize: material advantage, piece activity, king safety, tactical shots
+• Look for: captures, checks, threats, forks, pins, skewers
+• Consider: development, center control, pawn structure
 
-AVAILABLE LEGAL MOVES:
-• Only choose from the provided legal moves list
-• Each move is already validated as legal in the current position
-• Consider the position's context and strategy when selecting
+STRICT OUTPUT FORMAT:
+{"move":"Nf3","reasoning":"Brief explanation here.","confidence":85}
 
-RESPONSE FORMAT:
-- Return the move (e.g., "Nf3", "O-O", "Qxd4") in JSON format
-- Format is {"move":"e4"}
-- Strict JSON schema: {"move":"Nf3","reasoning":"...","confidence":82}
-- Do not include any extra keys or text outside JSON
-- Choose a move ONLY from the provided legal moves list
-- Ensure the move is legal and follows chess rules
-- Never leave your king in check unless checkmate is unavoidable`,
+CRITICAL REQUIREMENTS:
+• MOVE: Must be from the provided legal moves list ONLY
+• REASONING: Maximum 100 words OR 2 sentences - whichever is shorter
+• CONFIDENCE: Integer 0-100 (your certainty in this move)
+• NO extra text, explanations, or keys outside this JSON
+• NO markdown, code blocks, or additional formatting
+• Return ONLY the JSON object
+
+REASONING EXAMPLES:
+✓ "Develops knight and controls center. Prepares castling."
+✓ "Captures free material with tempo."
+✗ "This move develops the knight to f3 which is a classical opening principle that helps control the center squares e4 and d4 while also preparing for kingside castling which will improve king safety in the middlegame."`,
     },
     {
       role: "user",
-      content: `Position: ${chess.fen()}
+      content: `FEN: ${chess.fen()}
 Move ${Math.floor(chess.history().length / 2) + 1} - ${
         chess.turn() === "w" ? "White" : "Black"
       } to move
 
-LEGAL MOVES AVAILABLE: [${validMoves.join(", ")}]
+LEGAL MOVES: [${validMoves.join(", ")}]
 
 ${
   lastInvalidMoves.length > 0
-    ? `❌ Previous invalid moves: ${lastInvalidMoves
+    ? `❌ INVALID ATTEMPTS: ${lastInvalidMoves
         .filter((move) => !!move)
-        .join(", ")} - These were illegal. Choose a valid move.`
+        .join(", ")} - Choose from legal moves only!`
     : ""
 }
-Make your move:`,
+
+Return JSON now:`,
     },
   ] satisfies ModelMessage[];
 }

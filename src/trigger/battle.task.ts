@@ -39,7 +39,7 @@ export const BattleTask = schemaTask({
     const chess = new Chess();
 
     logger.info(
-      `🏁 Starting chess battle: ${battle.whitePlayer.model_id} vs ${battle.blackPlayer.model_id} (Battle ID: ${payload.battleId})`
+      `🏁 Starting chess battle: ${battle.whitePlayer.model_id} (White) vs ${battle.blackPlayer.model_id} (Black) (Battle ID: ${payload.battleId})`
     );
 
     let lastInvalidMoves: string[] = [];
@@ -73,7 +73,7 @@ export const BattleTask = schemaTask({
           chess.move(nextMoveResult.output.move);
 
           logger.info(
-            `${currentPlayer} (Move ${moveNumber}): ${
+            `${currentPlayer} (${currentPlayerModelId}) (Move ${moveNumber}): ${
               nextMoveResult.output.move
             } - Position: ${chess.fen().split(" ")[0]}`
           );
@@ -122,7 +122,7 @@ export const BattleTask = schemaTask({
           chess.moves()[Math.floor(Math.random() * chess.moves().length)];
         chess.move(randomMove);
         logger.info(
-          `🤖 Random move: ${randomMove} - Position: ${
+          `🤖 ${currentPlayer} (${currentPlayerModelId}) Random move: ${randomMove} - Position: ${
             chess.fen().split(" ")[0]
           }`
         );
@@ -183,11 +183,6 @@ export const BattleTask = schemaTask({
       })
       .where(eq(schema.battle.id, payload.battleId));
 
-    logger.info(
-      `${outcome} Final position: ${
-        chess.fen().split(" ")[0]
-      } (${totalMoves} moves played)`
-    );
     logger.info(
       `🏆 ${outcome} - ${
         winner === battle.white_player_id

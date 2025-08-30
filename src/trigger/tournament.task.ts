@@ -58,15 +58,25 @@ export const TournamentTask = schemaTask({
       }
 
       for (let i = 0; i < roundBattles.length / 2; i++) {
+        const oddBattle = roundBattles.find(
+          (b) => b.tournament_round_position === i * 2
+        );
+        const evenBattle = roundBattles.find(
+          (b) => b.tournament_round_position === i * 2 + 1
+        );
+
+        if (!oddBattle || !evenBattle) {
+          throw new Error("Battle not found");
+        }
         const whitePlayerId =
-          roundBattles[i * 2].winner === "white"
-            ? roundBattles[i * 2].white_player_id
-            : roundBattles[i * 2].black_player_id;
+          oddBattle.winner === "white"
+            ? oddBattle.white_player_id
+            : oddBattle.black_player_id;
 
         const blackPlayerId =
-          roundBattles[i * 2].winner === "black"
-            ? roundBattles[i * 2].white_player_id
-            : roundBattles[i * 2].black_player_id;
+          evenBattle.winner === "white"
+            ? evenBattle.white_player_id
+            : evenBattle.black_player_id;
 
         await db.insert(schema.battle).values({
           id: nanoid(),

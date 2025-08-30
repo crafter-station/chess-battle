@@ -14,10 +14,10 @@ await db.insert(schema.tournament).values({
 });
 
 const models = [
-  "openai/gpt-4o",
-  "anthropic/claude-sonnet-4",
-  "openai/gpt-4.1",
-  "deepseek/deepseek-v3.1",
+  "openai/gpt-5-nano",
+  "google/gemini-2.0-flash",
+  "openai/gpt-5-mini",
+  "google/gemini-2.5-flash-lite",
 ] satisfies Model[];
 
 const players = models.map(

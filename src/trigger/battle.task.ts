@@ -95,6 +95,14 @@ export const BattleTask = schemaTask({
         isValid = false;
       }
 
+      logger.info(`isValid: ${isValid}`);
+
+      if (!isValid) {
+        lastInvalidMoves.push(nextMoveResult.output.move ?? "");
+      }
+
+      logger.info(`lastInvalidMoves: ${lastInvalidMoves}`);
+
       await db.insert(schema.move).values({
         id: nanoid(),
         battle_id: payload.battleId,
@@ -110,7 +118,9 @@ export const BattleTask = schemaTask({
         reasoning: nextMoveResult.output.reasoning,
       });
 
-      if (lastInvalidMoves.length > 2) {
+      logger.info(`stored in d`);
+
+      if (lastInvalidMoves.length > 1) {
         logger.warn(
           `🤖 ${currentPlayer} (${currentPlayerModelId}) Too many invalid moves: ${lastInvalidMoves.join(
             ", ",

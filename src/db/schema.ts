@@ -32,6 +32,7 @@ export const battle = pgTable("battle", {
   outcome: BattleOutcomeEnum("outcome"),
   game_end_reason: text("game_end_reason"),
 
+  is_public: boolean("is_public").notNull().default(true),
   created_at: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -61,6 +62,7 @@ export const move = pgTable("move", {
   confidence: integer("confidence"),
   reasoning: text("reasoning"),
 
+  is_public: boolean("is_public").notNull().default(true),
   created_at: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -72,6 +74,7 @@ export const player = pgTable("player", {
 
   model_id: text("model_id").notNull(),
 
+  is_public: boolean("is_public").notNull().default(true),
   created_at: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -85,6 +88,7 @@ export const tournament = pgTable("tournament", {
   name: text("name").notNull(),
   description: text("description"),
 
+  is_public: boolean("is_public").notNull().default(true),
   created_at: timestamp("created_at").notNull().defaultNow(),
 });
 

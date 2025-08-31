@@ -26,7 +26,10 @@ export async function GET(request: Request) {
   const userId = await getUser();
 
   // Filter data by user ID - each user can only see their own battles
-  originUrl.searchParams.set("where", `"user_id" = '${userId}'`);
+  originUrl.searchParams.set(
+    "where",
+    `"user_id" = '${userId}' OR "is_public" = true`,
+  );
 
   const response = await fetch(originUrl);
 

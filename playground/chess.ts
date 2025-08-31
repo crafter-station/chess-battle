@@ -1,6 +1,6 @@
 import { Chess } from "chess.js";
 
-                const chess = new Chess();
+const chess = new Chess();
 
 chess.board().map((row) => row.map((cell) => cell?.type));
 

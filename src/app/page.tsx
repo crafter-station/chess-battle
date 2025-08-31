@@ -1,8 +1,8 @@
 "use client";
 
 import { eq, useLiveQuery } from "@tanstack/react-db";
+import dynamic from "next/dynamic";
 import Link from "next/link";
-import { useEffect, useState } from "react";
 import { Navbar } from "@/components/navbar";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,10 +12,9 @@ import {
   TournamentsCollection,
 } from "@/db/electric";
 import { formatDate } from "@/lib/utils";
-import BattleSetup from "./battle-setup";
 
-// Client-only content component
-function ClientContent() {
+// Client-only content component - dynamically imported to avoid SSR
+function ClientContentInternal() {
   const { data: battles } = useLiveQuery((q) =>
     q
       .from({
@@ -224,13 +223,76 @@ function ClientContent() {
   );
 }
 
+// Loading component for while ClientContent is loading
+function LoadingContent() {
+  return (
+    <>
+      {/* Loading placeholders */}
+      <div className="terminal-card terminal-border">
+        <CardHeader>
+          <CardTitle className="terminal-text terminal-glow text-xl font-mono flex items-center justify-between">
+            <span>&gt; TOURNAMENTS</span>
+            <Link
+              href="/tournaments"
+              className="terminal-text text-sm hover:text-terminal-accent transition-colors"
+            >
+              + Create Tournament
+            </Link>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="terminal-text text-center py-8 opacity-60">
+            &gt; Loading tournaments...
+          </div>
+        </CardContent>
+      </div>
+
+      <div className="terminal-card terminal-border">
+        <CardHeader>
+          <CardTitle className="terminal-text terminal-glow text-xl font-mono">
+            &gt; RECENT BATTLES
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="terminal-text text-center py-8 opacity-60">
+            &gt; Loading battles...
+          </div>
+        </CardContent>
+      </div>
+    </>
+  );
+}
+
+// Dynamic imports to avoid SSR issues with useLiveQuery
+const ClientContent = dynamic(() => Promise.resolve(ClientContentInternal), {
+  ssr: false,
+  loading: () => <LoadingContent />,
+});
+
+const BattleSetup = dynamic(() => import("./battle-setup"), {
+  ssr: false,
+  loading: () => (
+    <div className="max-w-2xl mx-auto px-6 py-8">
+      <Card className="terminal-card terminal-border">
+        <CardHeader>
+          <CardTitle className="terminal-text terminal-glow text-xl font-mono">
+            ⚔️ CONFIGURE BATTLE
+          </CardTitle>
+          <div className="terminal-text text-sm opacity-80">
+            &gt; Loading battle configuration...
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="terminal-text text-center py-8 opacity-60">
+            &gt; Initializing battle setup...
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  ),
+});
+
 export default function Page() {
-  const [isClient, setIsClient] = useState(false);
-
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
-
   return (
     <div className="min-h-screen terminal-card crt-flicker">
       <Navbar />
@@ -252,44 +314,7 @@ export default function Page() {
       <BattleSetup />
 
       <div className="max-w-6xl mx-auto px-6 space-y-8">
-        {isClient ? (
-          <ClientContent />
-        ) : (
-          <>
-            {/* Loading placeholders */}
-            <div className="terminal-card terminal-border">
-              <CardHeader>
-                <CardTitle className="terminal-text terminal-glow text-xl font-mono flex items-center justify-between">
-                  <span>&gt; TOURNAMENTS</span>
-                  <Link
-                    href="/tournaments"
-                    className="terminal-text text-sm hover:text-terminal-accent transition-colors"
-                  >
-                    + Create Tournament
-                  </Link>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="terminal-text text-center py-8 opacity-60">
-                  &gt; Loading tournaments...
-                </div>
-              </CardContent>
-            </div>
-
-            <div className="terminal-card terminal-border">
-              <CardHeader>
-                <CardTitle className="terminal-text terminal-glow text-xl font-mono">
-                  &gt; RECENT BATTLES
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="terminal-text text-center py-8 opacity-60">
-                  &gt; Loading battles...
-                </div>
-              </CardContent>
-            </div>
-          </>
-        )}
+        <ClientContent />
       </div>
 
       <div className="h-8" />

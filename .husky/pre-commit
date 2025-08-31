@@ -8,6 +8,12 @@ if [ -n "$STAGED_FILES" ]; then
   # Stage only the files that were checked
   echo "Re-staging only checked files..."
   git add $STAGED_FILES
+  
+  # Check if there are still any staged changes after formatting
+  if [ -z "$(git diff --cached --name-only)" ]; then
+    echo "No changes remain after formatting. Aborting commit to prevent empty commit."
+    exit 1
+  fi
 else
   echo "No staged files to check with biome."
 fi

@@ -24,7 +24,6 @@ export async function GET(request: Request) {
   //
 
   const userId = await getUser();
-  console.log(userId);
 
   // Filter data by user ID - each user can only see their own battles
   originUrl.searchParams.set("where", `"user_id" = '${userId}'`);

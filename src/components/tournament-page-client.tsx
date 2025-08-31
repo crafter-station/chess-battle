@@ -36,10 +36,6 @@ export function TournamentPageClient({
       .select(({ battle }) => ({ ...battle })),
   );
 
-  React.useEffect(() => {
-    console.log(battles);
-  }, [battles]);
-
   // Show loading state until mounted and data loaded
   if (!mounted || tournamentLoading) {
     return (

@@ -1,9 +1,12 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+
 import { ClerkProvider } from "@clerk/nextjs";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
+
 import CrtToggle from "@/components/crt-toggle";
+
 import MergeOnSignin from "./merge-client";
 
 const geistSans = Geist({

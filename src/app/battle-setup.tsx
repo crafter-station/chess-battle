@@ -1,19 +1,20 @@
 "use client";
 
-import { SignedOut, SignInButton } from "@clerk/nextjs";
-import { useLiveQuery } from "@tanstack/react-db";
 import { useRouter } from "next/navigation";
 import * as React from "react";
 
-import { StartBattleAction } from "@/actions/start-battle.action";
+import { SignedOut, SignInButton } from "@clerk/nextjs";
+import { useLiveQuery } from "@tanstack/react-db";
+
+import { AIModelsCollection } from "@/db/electric";
+
+import { MODELS } from "@/lib/models";
 
 import { ModelSelect } from "@/components/model-select";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-import { AIModelsCollection } from "@/db/electric";
-
-import { MODELS } from "@/lib/models";
+import { StartBattleAction } from "@/actions/start-battle.action";
 
 export default function BattleSetup() {
   const router = useRouter();

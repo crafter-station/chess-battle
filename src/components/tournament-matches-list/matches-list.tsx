@@ -1,8 +1,10 @@
 "use client";
 
+import type { BattleSelect } from "@/db/schema";
+
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import type { BattleSelect } from "@/db/schema";
+
 import { MatchCard } from "./match-card";
 
 interface MatchesListProps {

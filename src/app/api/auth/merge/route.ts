@@ -1,6 +1,8 @@
+import { cookies } from "next/headers";
+
 import { auth } from "@clerk/nextjs/server";
 import { eq } from "drizzle-orm";
-import { cookies } from "next/headers";
+
 import { db } from "@/db";
 import * as schema from "@/db/schema";
 

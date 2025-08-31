@@ -1,13 +1,16 @@
 "use client";
 
-import { eq, useLiveQuery } from "@tanstack/react-db";
 import Link from "next/link";
 import React from "react";
+
+import { eq, useLiveQuery } from "@tanstack/react-db";
+
+import { BattlesCollection, TournamentsCollection } from "@/db/electric";
+
 import { Navbar } from "@/components/navbar";
 import { MatchesList } from "@/components/tournament-matches-list";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { BattlesCollection, TournamentsCollection } from "@/db/electric";
 
 interface TournamentPageClientProps {
   tournamentId: string;

@@ -2,15 +2,18 @@
 
 import { useRouter } from "next/navigation";
 import { useActionState, useEffect, useState } from "react";
+
+import { MODELS } from "@/lib/models";
+
+import { type ModelOption, ModelSelect } from "@/components/model-select";
+import { Navbar } from "@/components/navbar";
+import { Button } from "@/components/ui/button";
+
 import {
   StartTournamentAction,
   type StartTournamentActionState,
   type TournamentMatch,
 } from "@/actions/start-tournament.action";
-import { type ModelOption, ModelSelect } from "@/components/model-select";
-import { Navbar } from "@/components/navbar";
-import { Button } from "@/components/ui/button";
-import { MODELS } from "@/lib/models";
 
 type TournamentSize = 4 | 8 | 16 | 32;
 

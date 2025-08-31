@@ -2,10 +2,13 @@ import { logger, schemaTask } from "@trigger.dev/sdk";
 import { Chess } from "chess.js";
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
+
 import { db } from "@/db";
 import * as schema from "@/db/schema";
+
 import type { GameEndReason } from "@/lib/game-end-reason";
 import { nanoid } from "@/lib/nanoid";
+
 import { GetNextMoveTask } from "./get-next-move.task";
 
 // Configuration constants

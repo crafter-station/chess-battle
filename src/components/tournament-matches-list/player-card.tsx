@@ -1,7 +1,9 @@
 "use client";
 
 import { eq, useLiveQuery } from "@tanstack/react-db";
+
 import { PlayersCollection } from "@/db/electric";
+
 import { ModelInfo } from "./model-info";
 import { PlayerMetrics } from "./player-metrics";
 

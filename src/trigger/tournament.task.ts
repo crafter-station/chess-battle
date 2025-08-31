@@ -1,9 +1,12 @@
 import { batch, schemaTask } from "@trigger.dev/sdk";
 import { and, asc, eq } from "drizzle-orm";
 import { z } from "zod";
+
 import { db } from "@/db";
 import * as schema from "@/db/schema";
+
 import { nanoid } from "@/lib/nanoid";
+
 import { BattleTask } from "./battle.task";
 
 export const TournamentTask = schemaTask({

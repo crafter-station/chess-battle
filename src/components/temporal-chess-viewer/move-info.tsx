@@ -1,8 +1,9 @@
 "use client";
 
-import { Chess } from "chess.js";
 import { useParams } from "next/navigation";
 import * as React from "react";
+
+import { Chess } from "chess.js";
 
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";

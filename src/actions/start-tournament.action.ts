@@ -1,12 +1,16 @@
 "use server";
 
-import { auth } from "@clerk/nextjs/server";
 import { cookies } from "next/headers";
+
+import { auth } from "@clerk/nextjs/server";
+
+import { TournamentTask } from "@/trigger/tournament.task";
+
 import { db } from "@/db";
 import * as schema from "@/db/schema";
+
 import { getUser } from "@/lib/get-user";
 import { nanoid } from "@/lib/nanoid";
-import { TournamentTask } from "@/trigger/tournament.task";
 
 export interface TournamentMatch {
   whitePlayerModelId: string;

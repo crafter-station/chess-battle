@@ -1,6 +1,7 @@
 import { useParams } from "next/navigation";
-import { parseAsInteger, useQueryState } from "nuqs";
 import React from "react";
+
+import { parseAsInteger, useQueryState } from "nuqs";
 
 import { useMoves } from "./use-moves";
 

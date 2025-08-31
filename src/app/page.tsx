@@ -1,17 +1,21 @@
 "use client";
 
-import { eq, useLiveQuery } from "@tanstack/react-db";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { Navbar } from "@/components/navbar";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+
+import { eq, useLiveQuery } from "@tanstack/react-db";
+
 import {
   BattlesCollection,
   PlayersCollection,
   TournamentsCollection,
 } from "@/db/electric";
+
 import { formatDate } from "@/lib/utils";
+
+import { Navbar } from "@/components/navbar";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 // Client-only content component - dynamically imported to avoid SSR
 function ClientContentInternal() {

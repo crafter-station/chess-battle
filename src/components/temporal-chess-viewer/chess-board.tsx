@@ -1,12 +1,16 @@
 "use client";
 
-import { eq, useLiveQuery } from "@tanstack/react-db";
-import { Chess } from "chess.js";
 import { useParams } from "next/navigation";
 import * as React from "react";
+
+import { eq, useLiveQuery } from "@tanstack/react-db";
+import { Chess } from "chess.js";
 import { Chessboard, defaultPieces } from "react-chessboard";
-import { Card } from "@/components/ui/card";
+
 import { BattlesCollection, PlayersCollection } from "@/db/electric";
+
+import { Card } from "@/components/ui/card";
+
 import { useCurrentMove } from "@/hooks/use-current-move";
 import { useMoveIndex } from "@/hooks/use-move-index";
 import { useMoves } from "@/hooks/use-moves";
@@ -146,7 +150,7 @@ export function ChessBoard() {
           fromSquare = fromFile + fromRank;
         } else if (fromFile && destination) {
           // For captures like "exd5", we know the file the pawn came from
-          const destRank = parseInt(destination[1]);
+          const destRank = parseInt(destination[1], 10);
           // Try different ranks - pawns typically move forward one square or capture diagonally
           const possibleFromRanks = [
             destRank - 1,
@@ -164,7 +168,7 @@ export function ChessBoard() {
         } else if (!fromFile && destination) {
           // For moves like "e4", try to guess the source square
           const destFile = destination[0];
-          const destRank = parseInt(destination[1]);
+          const destRank = parseInt(destination[1], 10);
 
           // For pawn pushes, the source is typically one or two squares behind
           const possibleFromRanks = [

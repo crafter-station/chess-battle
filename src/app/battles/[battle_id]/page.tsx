@@ -1,7 +1,9 @@
 "use client";
 
-import { SignedOut, SignInButton } from "@clerk/nextjs";
 import dynamic from "next/dynamic";
+
+import { SignedOut, SignInButton } from "@clerk/nextjs";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 const TemporalChessViewer = dynamic(

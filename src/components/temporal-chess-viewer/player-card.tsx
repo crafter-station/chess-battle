@@ -1,16 +1,20 @@
 "use client";
 
-import { eq, useLiveQuery } from "@tanstack/react-db";
 import { useParams } from "next/navigation";
 import React from "react";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
+
+import { eq, useLiveQuery } from "@tanstack/react-db";
+
 import {
   AIModelsCollection,
   MovesCollection,
   PlayersCollection,
 } from "@/db/electric";
+
 import { cn } from "@/lib/utils";
+
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 
 export function PlayerCard({
   playerId,

@@ -1,9 +1,12 @@
 "use client";
 
-import { eq, useLiveQuery } from "@tanstack/react-db";
 import Image from "next/image";
-import { Badge } from "@/components/ui/badge";
+
+import { eq, useLiveQuery } from "@tanstack/react-db";
+
 import { AIModelsCollection } from "@/db/electric";
+
+import { Badge } from "@/components/ui/badge";
 
 interface ModelInfoProps {
   modelId: string;

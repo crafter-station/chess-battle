@@ -1,8 +1,10 @@
+import { TournamentTask } from "@/trigger/tournament.task";
+
 import { db } from "@/db";
 import * as schema from "@/db/schema";
+
 import type { Model } from "@/lib/models";
 import { nanoid } from "@/lib/nanoid";
-import { TournamentTask } from "@/trigger/tournament.task";
 
 const userId = "user_123";
 

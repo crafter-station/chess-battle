@@ -1,8 +1,9 @@
 "use client";
 
+import type { GameEndReason } from "@/lib/game-end-reason";
+
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import type { GameEndReason } from "@/lib/game-end-reason";
 
 interface GameResultProps {
   outcome: "win" | "draw" | null;

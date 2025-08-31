@@ -27,7 +27,28 @@
   "assist": {
     "actions": {
       "source": {
-        "organizeImports": "on"
+        "organizeImports": {
+          "level": "on",
+          "options": {
+            "groups": [
+              [":BUN:", ":NODE:"],
+              ":BLANK_LINE:",
+              ["react", "react/**", "next", "next/**"],
+              ":BLANK_LINE:",
+              [":PACKAGE:"],
+              ":BLANK_LINE:",
+              ["@/trigger", "@/trigger/**"],
+              ":BLANK_LINE:",
+              ["@/db", "@/db/**"],
+              ":BLANK_LINE:",
+              ["@/lib", "@/lib/**"],
+              ":BLANK_LINE:",
+              ["@/components", "@/components/**"],
+              ":BLANK_LINE:",
+              ["@/hooks", "@/hooks/**"]
+            ]
+          }
+        }
       }
     }
   }

@@ -1,10 +1,14 @@
 "use client";
 
 import Link from "next/link";
+
+import type { BattleSelect } from "@/db/schema";
+
+import { cn } from "@/lib/utils";
+
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import type { BattleSelect } from "@/db/schema";
-import { cn } from "@/lib/utils";
+
 import { BattleMetrics } from "./battle-metrics";
 import { PlayerCard } from "./player-card";
 

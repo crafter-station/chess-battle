@@ -1,9 +1,15 @@
 "use client";
 
-import { eq, useLiveQuery } from "@tanstack/react-db";
-import { Chess } from "chess.js";
 import { useParams } from "next/navigation";
 import * as React from "react";
+
+import { eq, useLiveQuery } from "@tanstack/react-db";
+import { Chess } from "chess.js";
+
+import { BattlesCollection, PlayersCollection } from "@/db/electric";
+
+import type { GameEndReason } from "@/lib/game-end-reason";
+
 import { BattleTimer } from "@/components/temporal-chess-viewer/battle-timer";
 import { ChessBoard } from "@/components/temporal-chess-viewer/chess-board";
 import { GameResult } from "@/components/temporal-chess-viewer/game-result";
@@ -11,10 +17,9 @@ import { MoveHistory } from "@/components/temporal-chess-viewer/move-history";
 import { MoveInfo } from "@/components/temporal-chess-viewer/move-info";
 import { NavigationControls } from "@/components/temporal-chess-viewer/navigation-controls";
 import { PlayerCard } from "@/components/temporal-chess-viewer/player-card";
-import { BattlesCollection, PlayersCollection } from "@/db/electric";
+
 import { useCurrentMove } from "@/hooks/use-current-move";
 import { useMoves } from "@/hooks/use-moves";
-import type { GameEndReason } from "@/lib/game-end-reason";
 
 export function TemporalChessViewer() {
   const { battle_id } = useParams<{ battle_id: string }>();

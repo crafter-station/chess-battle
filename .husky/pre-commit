@@ -1,17 +1,7 @@
-# Get staged files
-STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACMR | grep -E '\.(jsx?|tsx?|json|css)$' | xargs)
-
-# Only run biome if there are staged files
-if [ -n "$STAGED_FILES" ]; then
-  bun run check $STAGED_FILES
-  # Stage only the files that were checked
-  git add $STAGED_FILES
+bun run check --staged
   
-  # Check if there are still any staged changes after formatting
-  if [ -z "$(git diff --cached --name-only)" ]; then
-    echo "No changes remain after formatting. Aborting commit to prevent empty commit."
-    exit 1
-  fi
-else
-  echo "No staged files to check with biome."
+# Check if there are still any staged changes after formatting
+if [ -z "$(git diff --cached --name-only)" ]; then
+  echo "No changes remain after formatting. Aborting commit to prevent empty commit."
+  exit 1
 fi

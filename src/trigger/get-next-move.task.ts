@@ -58,6 +58,24 @@ export const GetNextMoveTask = schemaTask({
     const tokensOut = generateMoveResult.usage?.outputTokens ?? null;
     const responseTime = Date.now() - initialTime;
 
+    let rawResponse = null;
+
+    if (
+      generateMoveResult.response &&
+      typeof generateMoveResult.response === "object" &&
+      "body" in generateMoveResult.response &&
+      generateMoveResult.response.body &&
+      typeof generateMoveResult.response.body === "object" &&
+      "content" in generateMoveResult.response.body &&
+      Array.isArray(generateMoveResult.response.body.content) &&
+      generateMoveResult.response.body.content[0] &&
+      typeof generateMoveResult.response.body.content[0].text === "string"
+    ) {
+      rawResponse = generateMoveResult.response.body.content[0].text;
+    } else {
+      rawResponse = null;
+    }
+
     return {
       responseTime,
       move,
@@ -65,6 +83,7 @@ export const GetNextMoveTask = schemaTask({
       tokensOut,
       reasoning: generateMoveResult.object.reasoning,
       confidence: generateMoveResult.object.confidence,
+      rawResponse,
     };
   },
 });

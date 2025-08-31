@@ -55,6 +55,7 @@ export const move = pgTable("move", {
   tokens_in: integer("tokens_in"),
   tokens_out: integer("tokens_out"),
   response_time: integer("response_time"),
+  raw_response: text("raw_response"),
 
   confidence: integer("confidence"),
   reasoning: text("reasoning"),

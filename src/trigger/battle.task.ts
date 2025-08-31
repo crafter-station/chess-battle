@@ -170,6 +170,7 @@ export const BattleTask = schemaTask({
           response_time: nextMoveResult.output.responseTime,
           confidence: nextMoveResult.output.confidence,
           reasoning: nextMoveResult.output.reasoning,
+          raw_response: isValid ? null : nextMoveResult.output.rawResponse,
         });
 
         // Update invalid move tracking

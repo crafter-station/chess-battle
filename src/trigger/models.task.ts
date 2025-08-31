@@ -1,4 +1,4 @@
-import { logger, schemaTask, wait } from "@trigger.dev/sdk";
+import { logger, schemaTask, task, wait } from "@trigger.dev/sdk";
 import { z } from "zod";
 import { db } from "@/db";
 import * as schema from "@/db/schema";
@@ -11,13 +11,6 @@ type MinimalModelExtract = {
   logos?: string[];
   chat_url?: string;
 };
-
-function slugifyModelName(name: string): string {
-  return name
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-}
 
 export const FetchModelDetailsTask = schemaTask({
   id: "fetch-model-details",
@@ -67,15 +60,17 @@ export const FetchModelDetailsTask = schemaTask({
 
     if (!resp.ok) {
       const errText = await resp.text().catch(() => "");
-      logger.error("Firecrawl HTTP error", { status: resp.status, body: errText?.slice(0, 500) });
+      logger.error("Firecrawl HTTP error", {
+        status: resp.status,
+        body: errText?.slice(0, 500),
+      });
       throw new Error(`Firecrawl HTTP ${resp.status}`);
     }
 
     const doc: any = await resp.json();
     // fallback to root.json or data
-    const minimal: MinimalModelExtract | undefined = (doc?.data?.json as any)
-      ?? (doc?.json as any)
-      ?? (doc?.data as any);
+    const minimal: MinimalModelExtract | undefined =
+      (doc?.data?.json as any) ?? (doc?.json as any) ?? (doc?.data as any);
 
     if (!minimal || typeof minimal !== "object") {
       logger.warn("Firecrawl returned no parsable JSON payload", {
@@ -94,9 +89,8 @@ export const FetchModelDetailsTask = schemaTask({
 });
 
 // Parent 4 iterate list, fetch &  upsert
-export const SyncAIGatewayModelsTask = schemaTask({
+export const SyncAIGatewayModelsTask = task({
   id: "sync-ai-gateway-models",
-  schema: z.object({}),
   run: async () => {
     let upserted = 0;
 
@@ -117,16 +111,22 @@ export const SyncAIGatewayModelsTask = schemaTask({
       if (detailsResult.ok) {
         enriched = detailsResult.output;
       } else {
-        logger.warn("FetchModelDetailsTask failed; proceeding with minimal fields", {
-          canonical,
-          error: detailsResult.error,
-        });
+        logger.warn(
+          "FetchModelDetailsTask failed; proceeding with minimal fields",
+          {
+            canonical,
+            error: detailsResult.error,
+          }
+        );
       }
 
       // upsert
       const name = enriched?.name ?? slug.replace(/-/g, " ");
       const description = enriched?.description ?? null;
-      const logoUrl = Array.isArray(enriched?.logos) && enriched!.logos!.length > 0 ? enriched!.logos![0] : null;
+      const logoUrl =
+        Array.isArray(enriched?.logos) && enriched!.logos!.length > 0
+          ? enriched!.logos![0]
+          : null;
       const chatUrl = enriched?.chat_url ?? null;
 
       try {
@@ -156,7 +156,10 @@ export const SyncAIGatewayModelsTask = schemaTask({
           });
         upserted += 1;
       } catch (e) {
-        logger.error("Failed to upsert model", { canonicalId: canonical, error: String(e) });
+        logger.error("Failed to upsert model", {
+          canonicalId: canonical,
+          error: String(e),
+        });
       }
 
       // Step 3: wait

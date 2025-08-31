@@ -4,7 +4,8 @@ import { useState, useEffect } from "react";
 import { useActionState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { ModelSelect, type ModelOption } from "@/components/ModelSelect";
+import { ModelSelect, type ModelOption } from "@/components/model-select";
+import { Navbar } from "@/components/navbar";
 import { MODELS } from "@/lib/models";
 import { StartTournamentAction, type StartTournamentActionState, type TournamentMatch } from "@/actions/start-tournament.action";
 
@@ -468,81 +469,92 @@ export default function TournamentsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black">
+    <div className="min-h-screen terminal-card crt-flicker">
+      <Navbar />
+      
       {/* Header */}
-      <div className="text-center py-8">
-        <div className="inline-block p-6 rounded-full bg-gradient-to-r from-yellow-600 to-yellow-400 mb-4">
-          <div className="w-16 h-16 bg-gradient-to-r from-yellow-500 to-yellow-300 rounded-full flex items-center justify-center">
-            <span className="text-2xl">⚡</span>
+      <div className="max-w-6xl mx-auto px-6 py-8">
+        <div className="text-center">
+          <div className="inline-block p-6 rounded-full bg-gradient-to-r from-terminal-accent/20 to-terminal-accent/10 border border-terminal-accent/30 mb-4">
+            <div className="w-16 h-16 bg-gradient-to-r from-terminal-accent/30 to-terminal-accent/20 rounded-full flex items-center justify-center border border-terminal-accent/50">
+              <span className="text-2xl">⚡</span>
+            </div>
           </div>
+          <h1 className="terminal-text terminal-glow text-4xl font-mono mb-2">
+            CHESS BATTLE
+          </h1>
+          <h2 className="terminal-text text-2xl font-mono mb-4">AI TOURNAMENT</h2>
+          <p className="terminal-text opacity-80">
+            Select your AI warriors for the ultimate chess battle
+          </p>
         </div>
-        <h1 className="text-4xl font-bold text-yellow-400 mb-2">
-          CHESS BATTLE
-        </h1>
-        <h2 className="text-2xl font-bold text-white mb-4">AI TOURNAMENT</h2>
-        <p className="text-gray-300">
-          Select your AI warriors for the ultimate chess battle
-        </p>
       </div>
 
       {/* Tournament Size Selector */}
-      <div className="flex justify-center gap-4 mb-8">
-        {([4, 8, 16, 32] as TournamentSize[]).map((size) => (
-          <Button
-            key={size}
-            variant={tournamentSize === size ? "default" : "outline"}
-            className={`${
-              tournamentSize === size
-                ? "bg-yellow-600 hover:bg-yellow-500 text-black"
-                : "border-yellow-600 text-yellow-400 hover:bg-yellow-600/10"
-            }`}
-            onClick={() => setTournamentSize(size)}
-          >
-            {size} Players
-          </Button>
-        ))}
+      <div className="max-w-6xl mx-auto px-6 mb-8">
+        <div className="flex justify-center gap-4">
+          {([4, 8, 16, 32] as TournamentSize[]).map((size) => (
+            <Button
+              key={size}
+              variant={tournamentSize === size ? "default" : "outline"}
+              className={`terminal-text font-mono ${
+                tournamentSize === size
+                  ? "bg-terminal-accent hover:bg-terminal-accent/80 text-black"
+                  : "border-terminal-accent text-terminal-accent hover:bg-terminal-accent/10"
+              }`}
+              onClick={() => setTournamentSize(size)}
+            >
+              {size} Players
+            </Button>
+          ))}
+        </div>
       </div>
 
       {/* Tournament Bracket */}
-      <div className="bg-black/40 backdrop-blur-sm border border-yellow-600/30 rounded-xl mx-4 mb-8">
-        {renderBracket()}
+      <div className="max-w-6xl mx-auto px-6 mb-8">
+        <div className="terminal-card terminal-border">
+          {renderBracket()}
+        </div>
       </div>
 
       {/* Controls */}
-      <div className="flex justify-center gap-4 mb-8">
-        <Button
-          className="bg-green-600 hover:bg-green-500 text-white"
-          onClick={handlePopulateRandom}
-        >
-          🎲 Populate Random
-        </Button>
-        <Button
-          className="bg-purple-600 hover:bg-purple-500 text-white"
-          onClick={handleShuffleAll}
-        >
-          🔀 Shuffle All
-        </Button>
-        <Button
-          className="bg-blue-600 hover:bg-blue-500 text-white"
-          onClick={() =>
-            setBrackets((prev) =>
-              prev.map((b) => ({
-                ...b,
-                whitePlayer: undefined,
-                blackPlayer: undefined,
-              }))
-            )
-          }
-        >
-          🗑️ Clear All
-        </Button>
+      <div className="max-w-6xl mx-auto px-6 mb-8">
+        <div className="flex justify-center gap-4">
+          <Button
+            className="terminal-text font-mono bg-green-700 hover:bg-green-600 text-white border border-green-600/50"
+            onClick={handlePopulateRandom}
+          >
+            🎲 Populate Random
+          </Button>
+          <Button
+            className="terminal-text font-mono bg-purple-700 hover:bg-purple-600 text-white border border-purple-600/50"
+            onClick={handleShuffleAll}
+          >
+            🔀 Shuffle All
+          </Button>
+          <Button
+            className="terminal-text font-mono bg-red-700 hover:bg-red-600 text-white border border-red-600/50"
+            onClick={() =>
+              setBrackets((prev) =>
+                prev.map((b) => ({
+                  ...b,
+                  whitePlayer: undefined,
+                  blackPlayer: undefined,
+                }))
+              )
+            }
+          >
+            🗑️ Clear All
+          </Button>
+        </div>
       </div>
 
-              {/* Start Tournament Button */}
-        {brackets
-          .filter((b) => b.round === 0)
-          .every((b) => b.whitePlayer && b.blackPlayer) && (
-          <div className="flex justify-center mb-8">
+      {/* Start Tournament Button */}
+      {brackets
+        .filter((b) => b.round === 0)
+        .every((b) => b.whitePlayer && b.blackPlayer) && (
+        <div className="max-w-6xl mx-auto px-6 mb-8">
+          <div className="flex justify-center">
             <form action={formAction}>
               {(() => {
                 const tournamentData = getTournamentData();
@@ -557,37 +569,40 @@ export default function TournamentsPage() {
               <Button
                 type="submit"
                 size="lg"
-                className="bg-gradient-to-r from-yellow-600 to-yellow-500 hover:from-yellow-500 hover:to-yellow-400 text-black font-bold px-8 py-3 text-lg shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                className="terminal-text font-mono bg-gradient-to-r from-terminal-accent to-terminal-accent/80 hover:from-terminal-accent/80 hover:to-terminal-accent/60 text-black font-bold px-8 py-3 text-lg shadow-lg disabled:opacity-50 disabled:cursor-not-allowed border border-terminal-accent/50"
                 disabled={isPending}
               >
                 {isPending ? "🔄 STARTING..." : "⚔️ START TOURNAMENT"}
               </Button>
             </form>
           </div>
-        )}
+        </div>
+      )}
 
-        {/* Error Display */}
-        {!actionState.output.success && actionState.output.error && (
-          <div className="flex justify-center mb-8">
-            <div className="bg-red-900/20 border border-red-500/50 rounded-lg p-4 max-w-md">
-              <div className="text-red-400 text-sm font-medium">
+      {/* Error Display */}
+      {!actionState.output.success && actionState.output.error && (
+        <div className="max-w-6xl mx-auto px-6 mb-8">
+          <div className="flex justify-center">
+            <div className="terminal-card border border-red-500/50 bg-red-900/20 p-4 max-w-md">
+              <div className="terminal-text text-red-400 text-sm font-mono">
                 ❌ {actionState.output.error}
               </div>
             </div>
           </div>
-        )}
+        </div>
+      )}
 
       {/* Model Selection */}
       {selectedPosition && selectedSide && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-gray-900 border border-yellow-600/50 rounded-xl p-6 max-w-md w-full mx-4">
+          <div className="terminal-card terminal-border p-6 max-w-md w-full mx-4">
             <div className="flex items-center gap-3 mb-4">
               <div
                 className={`w-4 h-4 rounded-sm border border-gray-400 ${
                   selectedSide === "white" ? "bg-white" : "bg-black"
                 }`}
               ></div>
-              <h3 className="text-yellow-400 font-bold text-lg">
+              <h3 className="terminal-text terminal-glow font-mono text-lg">
                 Select {selectedSide === "white" ? "White" : "Black"} Player
               </h3>
             </div>
@@ -608,7 +623,7 @@ export default function TournamentsPage() {
             <div className="flex gap-2 mt-4">
               <Button
                 variant="outline"
-                className="flex-1 border-gray-600 text-gray-300"
+                className="flex-1 border-terminal-accent/50 text-terminal-accent hover:bg-terminal-accent/10 terminal-text font-mono"
                 onClick={() => {
                   setSelectedPosition(null);
                   setSelectedSide(null);
@@ -620,6 +635,8 @@ export default function TournamentsPage() {
           </div>
         </div>
       )}
+
+      <div className="h-8" />
     </div>
   );
 }

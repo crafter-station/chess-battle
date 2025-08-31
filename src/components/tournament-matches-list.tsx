@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import type { BattleSelect, PlayerSelect } from "@/db/schema";
@@ -21,34 +22,36 @@ function getOutcomeDisplay(match: MatchData) {
   if (!match.outcome) {
     return { text: "In Progress", variant: "secondary" as const, icon: "⏳" };
   }
-  
+
   if (match.outcome === "draw") {
     return { text: "Draw", variant: "outline" as const, icon: "🤝" };
   }
-  
+
   if (match.winner === "white") {
     return { text: "White Wins", variant: "default" as const, icon: "♔" };
   }
-  
+
   if (match.winner === "black") {
     return { text: "Black Wins", variant: "default" as const, icon: "♛" };
   }
-  
+
   return { text: "Unknown", variant: "secondary" as const, icon: "❓" };
 }
 
 function getRoundDisplay(match: MatchData) {
   if (match.tournament_round && match.tournament_round_position !== null) {
-    return `Round ${match.tournament_round} - Match ${match.tournament_round_position + 1}`;
+    return `Round ${match.tournament_round} - Match ${
+      match.tournament_round_position + 1
+    }`;
   }
   return "Tournament Match";
 }
 
-export function MatchesList({ 
-  matches, 
-  title = "Matches", 
+export function MatchesList({
+  matches,
+  title = "Matches",
   emptyMessage = "No matches available yet.",
-  className = ""
+  className = "",
 }: MatchesListProps) {
   if (!matches || matches.length === 0) {
     return (
@@ -89,11 +92,11 @@ export function MatchesList({
           {title}
         </CardTitle>
         <div className="terminal-text text-sm opacity-70">
-          {matches.length} match{matches.length !== 1 ? 'es' : ''} total
+          {matches.length} match{matches.length !== 1 ? "es" : ""} total
         </div>
       </CardHeader>
       <CardContent className="space-y-6">
-        {sortedRounds.map(round => (
+        {sortedRounds.map((round) => (
           <div key={round} className="space-y-3">
             {/* Round Header */}
             {sortedRounds.length > 1 && (
@@ -106,15 +109,19 @@ export function MatchesList({
                 </Badge>
               </div>
             )}
-            
+
             {/* Matches Grid */}
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {matchesByRound[round]
-                .sort((a, b) => (a.tournament_round_position || 0) - (b.tournament_round_position || 0))
+                .sort(
+                  (a, b) =>
+                    (a.tournament_round_position || 0) -
+                    (b.tournament_round_position || 0)
+                )
                 .map((match) => {
                   const outcome = getOutcomeDisplay(match);
                   const roundInfo = getRoundDisplay(match);
-                  
+
                   return (
                     <Link
                       key={match.id}
@@ -125,11 +132,14 @@ export function MatchesList({
                         <CardContent className="p-4 space-y-3">
                           {/* Round Info */}
                           <div className="text-center">
-                            <Badge variant="outline" className="terminal-text text-xs">
+                            <Badge
+                              variant="outline"
+                              className="terminal-text text-xs"
+                            >
                               {roundInfo}
                             </Badge>
                           </div>
-                          
+
                           {/* Players */}
                           <div className="space-y-2">
                             {/* White Player */}
@@ -144,12 +154,14 @@ export function MatchesList({
                                 </div>
                               </div>
                             </div>
-                            
+
                             {/* VS Divider */}
                             <div className="text-center">
-                              <span className="terminal-text text-sm opacity-70 font-mono">VS</span>
+                              <span className="terminal-text text-sm opacity-70 font-mono">
+                                VS
+                              </span>
                             </div>
-                            
+
                             {/* Black Player */}
                             <div className="flex items-center gap-2 p-2 rounded border border-gray-700/30">
                               <span className="text-white text-lg">♛</span>
@@ -163,14 +175,17 @@ export function MatchesList({
                               </div>
                             </div>
                           </div>
-                          
+
                           {/* Outcome */}
                           <div className="text-center pt-2 border-t border-gray-700/30">
-                            <Badge variant={outcome.variant} className="terminal-text">
+                            <Badge
+                              variant={outcome.variant}
+                              className="terminal-text"
+                            >
                               {outcome.icon} {outcome.text}
                             </Badge>
                           </div>
-                          
+
                           {/* Battle ID (for debugging) */}
                           <div className="text-center">
                             <div className="terminal-text text-xs opacity-50 font-mono">

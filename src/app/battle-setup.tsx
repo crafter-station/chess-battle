@@ -1,15 +1,18 @@
 "use client";
 
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { SignedOut, SignInButton } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import * as React from "react";
+
 import { StartBattleAction } from "@/actions/start-battle.action";
-import { MODELS } from "@/lib/models";
-import { ModelSelect } from "@/components/ModelSelect";
+
+import { ModelSelect } from "@/components/model-select";
 import { Button } from "@/components/ui/button";
-import { SignedOut, SignInButton } from "@clerk/nextjs";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+
+import { MODELS } from "@/lib/models";
+import { nanoid } from "@/lib/nanoid";
 import { createStartBattleOptimistic } from "@/lib/optimistic-actions";
-import { nanoid } from "nanoid";
 
 export default function BattleSetup() {
   const router = useRouter();

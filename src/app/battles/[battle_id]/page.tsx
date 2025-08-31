@@ -1,15 +1,27 @@
-import TemporalChessViewerClient from "@/components/TemporalChessViewerClient";
+"use client";
+
+import dynamic from "next/dynamic";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SignedOut, SignInButton } from "@clerk/nextjs";
 
-export default async function Page({
-  params,
-}: {
-  params: Promise<{ battle_id: string }>;
-}) {
-  const { battle_id } = await params;
-  // Client-only viewer wrapper
+const TemporalChessViewer = dynamic(
+  () =>
+    import("@/components/temporal-chess-viewer").then((mod) => ({
+      default: mod.TemporalChessViewer,
+    })),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex items-center justify-center h-96 terminal-card rounded-lg">
+        <div className="terminal-text text-lg terminal-glow">
+          Loading chess viewer...
+        </div>
+      </div>
+    ),
+  }
+);
 
+export default function Page() {
   return (
     <div className="min-h-screen terminal-card crt-flicker">
       {/* Terminal Header */}
@@ -39,11 +51,15 @@ export default async function Page({
             </CardHeader>
             <CardContent>
               <div className="terminal-text text-sm opacity-90">
-                You're watching the first 5 moves as a guest. Sign in to see the full battle!
+                You're watching the first 5 moves as a guest. Sign in to see the
+                full battle!
               </div>
               <div className="mt-3">
                 <SignInButton mode="modal">
-                  <button className="terminal-border bg-terminal-card px-3 py-2 rounded-md hover:bg-terminal-card/80">
+                  <button
+                    type="button"
+                    className="terminal-border bg-terminal-card px-3 py-2 rounded-md hover:bg-terminal-card/80"
+                  >
                     Sign in to continue
                   </button>
                 </SignInButton>
@@ -52,7 +68,7 @@ export default async function Page({
           </Card>
         </SignedOut>
       </div>
-      <TemporalChessViewerClient battleId={battle_id} />
+      <TemporalChessViewer />
     </div>
   );
 }

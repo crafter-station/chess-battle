@@ -44,22 +44,27 @@ export function ModelSelect({
         type="button"
         onClick={() => setOpen((v) => !v)}
         className="w-full terminal-border bg-terminal-card terminal-text px-3 py-2 rounded-md text-left flex items-center gap-3"
-      {
-        ...({} as any)
-      }
       >
         {selected?.logo_url ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={selected.logo_url} alt={selected.name ?? selected.canonical_id} className="h-6 w-6 rounded" />
+          // biome-ignore lint/performance/noImgElement: ok
+          <img
+            src={selected.logo_url}
+            alt={selected.name ?? selected.canonical_id}
+            className="h-6 w-6 rounded"
+          />
         ) : (
-          <div className="h-6 w-6 rounded bg-terminal-border flex items-center justify-center text-xs opacity-70">🧠</div>
+          <div className="h-6 w-6 rounded bg-terminal-border flex items-center justify-center text-xs opacity-70">
+            🧠
+          </div>
         )}
         <div className="flex-1">
           <div className="font-mono">
             {selected?.name ?? (value || placeholder)}
           </div>
           {selected?.description ? (
-            <div className="text-xs opacity-70 line-clamp-1">{selected.description}</div>
+            <div className="text-xs opacity-70 line-clamp-1">
+              {selected.description}
+            </div>
           ) : null}
         </div>
         <div className="opacity-60">▾</div>
@@ -80,15 +85,25 @@ export function ModelSelect({
                     className="w-full px-3 py-2 flex items-center gap-3 hover:bg-gray-800/80 text-left terminal-text"
                   >
                     {m.logo_url ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={m.logo_url} alt={m.name ?? m.canonical_id} className="h-6 w-6 rounded" />
+                      // biome-ignore lint/performance/noImgElement: ok
+                      <img
+                        src={m.logo_url}
+                        alt={m.name ?? m.canonical_id}
+                        className="h-6 w-6 rounded"
+                      />
                     ) : (
-                      <div className="h-6 w-6 rounded bg-terminal-border flex items-center justify-center text-xs opacity-70">🧠</div>
+                      <div className="h-6 w-6 rounded bg-terminal-border flex items-center justify-center text-xs opacity-70">
+                        🧠
+                      </div>
                     )}
                     <div className="flex-1">
-                      <div className="font-mono text-sm">{m.name ?? m.canonical_id}</div>
+                      <div className="font-mono text-sm">
+                        {m.name ?? m.canonical_id}
+                      </div>
                       {m.description ? (
-                        <div className="text-xs opacity-70 line-clamp-1">{m.description}</div>
+                        <div className="text-xs opacity-70 line-clamp-1">
+                          {m.description}
+                        </div>
                       ) : null}
                     </div>
                   </button>
@@ -101,5 +116,3 @@ export function ModelSelect({
     </div>
   );
 }
-
-

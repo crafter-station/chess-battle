@@ -5,11 +5,14 @@ import type {
   BattleSelect,
   MoveSelect,
   PlayerSelect,
+  AIModelSelect,
   TournamentSelect,
 } from "./schema";
 
-export const BattlesCollection = createCollection<BattleSelect>(
-  electricCollectionOptions<BattleSelect>({
+export const BattlesCollection = createCollection<
+  BattleSelect & { created_at: string }
+>(
+  electricCollectionOptions<BattleSelect & { created_at: string }>({
     id: "battlesCollection",
     shapeOptions: {
       url: `${process.env.NEXT_PUBLIC_URL}/api/electric/battles`,
@@ -18,8 +21,10 @@ export const BattlesCollection = createCollection<BattleSelect>(
   })
 );
 
-export const TournamentsCollection = createCollection<TournamentSelect>(
-  electricCollectionOptions<TournamentSelect>({
+export const TournamentsCollection = createCollection<
+  TournamentSelect & { created_at: string }
+>(
+  electricCollectionOptions<TournamentSelect & { created_at: string }>({
     id: "tournamentsCollection",
     shapeOptions: {
       url: `${process.env.NEXT_PUBLIC_URL}/api/electric/tournaments`,
@@ -38,11 +43,25 @@ export const PlayersCollection = createCollection<PlayerSelect>(
   })
 );
 
-export const MovesCollection = createCollection<MoveSelect>(
-  electricCollectionOptions<MoveSelect>({
+export const MovesCollection = createCollection<
+  Omit<MoveSelect, "created_at"> & { created_at: string }
+>(
+  electricCollectionOptions<
+    Omit<MoveSelect, "created_at"> & { created_at: string }
+  >({
     id: "movesCollection",
     shapeOptions: {
       url: `${process.env.NEXT_PUBLIC_URL}/api/electric/moves`,
+    },
+    getKey: (item) => item.id,
+  })
+);
+
+export const AIModelsCollection = createCollection<AIModelSelect>(
+  electricCollectionOptions<AIModelSelect>({
+    id: "AIModelsCollection",
+    shapeOptions: {
+      url: `${process.env.NEXT_PUBLIC_URL}/api/electric/ai-models`,
     },
     getKey: (item) => item.id,
   })

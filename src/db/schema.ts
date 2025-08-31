@@ -140,4 +140,4 @@ export const ai_model = pgTable("ai_model", {
   updated_at: timestamp("updated_at").notNull().defaultNow(),
 });
 
-export type AiModelSelect = typeof ai_model.$inferSelect;
+export type AIModelSelect = typeof ai_model.$inferSelect;

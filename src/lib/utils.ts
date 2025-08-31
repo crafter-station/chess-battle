@@ -1,8 +1,8 @@
-import { clsx, type ClassValue } from "clsx"
-import { twMerge } from "tailwind-merge"
+import { clsx, type ClassValue } from "clsx";
+import { twMerge } from "tailwind-merge";
 
 export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs))
+  return twMerge(clsx(inputs));
 }
 
 export function formatModelName(modelId: string): string {
@@ -17,22 +17,22 @@ export function formatModelName(modelId: string): string {
 
   // Provider mappings for cleaner display
   const providerNames: Record<string, string> = {
-    "anthropic": "Claude",
-    "openai": "GPT",
-    "google": "Gemini",
-    "meta": "Llama",
-    "mistral": "Mistral",
-    "deepseek": "DeepSeek",
-    "xai": "Grok",
-    "amazon": "Nova",
-    "cohere": "Cohere",
-    "perplexity": "Sonar",
-    "alibaba": "Qwen",
-    "moonshotai": "Kimi",
-    "morph": "Morph",
-    "vercel": "Vercel",
-    "inception": "Inception",
-    "zai": "GLM"
+    anthropic: "Claude",
+    openai: "GPT",
+    google: "Gemini",
+    meta: "Llama",
+    mistral: "Mistral",
+    deepseek: "DeepSeek",
+    xai: "Grok",
+    amazon: "Nova",
+    cohere: "Cohere",
+    perplexity: "Sonar",
+    alibaba: "Qwen",
+    moonshotai: "Kimi",
+    morph: "Morph",
+    vercel: "Vercel",
+    inception: "Inception",
+    zai: "GLM",
   };
 
   const displayProvider = providerNames[provider] || provider;
@@ -61,19 +61,24 @@ export function formatModelName(modelId: string): string {
     .trim();
 
   // Capitalize first letter of each word
-  displayModel = displayModel.replace(/\b\w/g, l => l.toUpperCase());
+  displayModel = displayModel.replace(/\b\w/g, (l) => l.toUpperCase());
 
   // Combine provider and model
   return `${displayProvider} ${displayModel}`;
 }
 
 export function formatDate(date: Date | string): string {
-  const dateObj = typeof date === 'string' ? new Date(date) : date;
-  return dateObj.toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
+  const dateObj =
+    typeof date === "string"
+      ? date.endsWith("Z")
+        ? new Date(date)
+        : new Date(`${date}Z`)
+      : date;
+  return dateObj.toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
   });
 }

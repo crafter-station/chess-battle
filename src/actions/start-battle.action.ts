@@ -73,11 +73,13 @@ export async function StartBattleAction(
     await db.insert(schema.player).values({
       id: whitePlayerId,
       model_id: input.whitePlayerModelId,
+      user_id: userId,
     });
 
     await db.insert(schema.player).values({
       id: blackPlayerId,
       model_id: input.blackPlayerModelId,
+      user_id: userId,
     });
 
     await db.insert(schema.battle).values({

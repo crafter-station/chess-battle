@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import CrtToggle from "@/components/CrtToggle";
+import CrtToggle from "@/components/crt-toggle";
 import { ClerkProvider } from "@clerk/nextjs";
 import MergeOnSignin from "./merge-client";
+import { NuqsAdapter } from "nuqs/adapters/next/app";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -31,14 +32,17 @@ export default function RootLayout({
         <head>
           {/* Prevent flicker on first paint by applying stored preference ASAP */}
           <script
+            // biome-ignore lint/security/noDangerouslySetInnerHtml: works!
             dangerouslySetInnerHTML={{
               __html: `try{if(localStorage.getItem('crt-disabled')==='1'){document.documentElement.classList.add('no-crt')}}catch(e){}`,
             }}
           />
         </head>
-        <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+        <body
+          className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        >
           <MergeOnSignin />
-          {children}
+          <NuqsAdapter>{children}</NuqsAdapter>
           <CrtToggle />
         </body>
       </html>

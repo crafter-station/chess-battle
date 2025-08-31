@@ -9,7 +9,8 @@ export default function CrtToggle() {
   const [disabled, setDisabled] = useState(false);
 
   useEffect(() => {
-    const stored = typeof window !== "undefined" ? localStorage.getItem(STORAGE_KEY) : null;
+    const stored =
+      typeof window !== "undefined" ? localStorage.getItem(STORAGE_KEY) : null;
     const initialDisabled = stored === "1";
     setDisabled(initialDisabled);
     if (initialDisabled) {
@@ -39,5 +40,3 @@ export default function CrtToggle() {
     </div>
   );
 }
-
-

@@ -33,8 +33,10 @@ export const TournamentsCollection = createCollection<
   })
 );
 
-export const PlayersCollection = createCollection<PlayerSelect>(
-  electricCollectionOptions<PlayerSelect>({
+export const PlayersCollection = createCollection<
+  PlayerSelect & { created_at: string }
+>(
+  electricCollectionOptions<PlayerSelect & { created_at: string }>({
     id: "playersCollection",
     shapeOptions: {
       url: `${process.env.NEXT_PUBLIC_URL}/api/electric/players`,
@@ -57,8 +59,10 @@ export const MovesCollection = createCollection<
   })
 );
 
-export const AIModelsCollection = createCollection<AIModelSelect>(
-  electricCollectionOptions<AIModelSelect>({
+export const AIModelsCollection = createCollection<
+  AIModelSelect & { created_at: string }
+>(
+  electricCollectionOptions<AIModelSelect & { created_at: string }>({
     id: "AIModelsCollection",
     shapeOptions: {
       url: `${process.env.NEXT_PUBLIC_URL}/api/electric/ai-models`,

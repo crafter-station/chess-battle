@@ -68,17 +68,21 @@ export function TemporalChessViewer() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Chess Board */}
           <div className="lg:col-span-2 flex flex-col justify-start items-center">
-            <PlayerCard
-              color="WHITE"
-              modelId={battle.white_player?.model_id}
-              isActive={nextPlayerColor === "white"}
-            />
+            {battle.white_player?.id && (
+              <PlayerCard
+                color="WHITE"
+                playerId={battle.white_player.id}
+                isActive={nextPlayerColor === "white"}
+              />
+            )}
             <ChessBoard />
-            <PlayerCard
-              color="BLACK"
-              modelId={battle.black_player?.model_id}
-              isActive={nextPlayerColor === "black"}
-            />
+            {battle.black_player?.id && (
+              <PlayerCard
+                color="BLACK"
+                playerId={battle.black_player.id}
+                isActive={nextPlayerColor === "black"}
+              />
+            )}
           </div>
 
           {/* Control Panel */}

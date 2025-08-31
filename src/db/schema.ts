@@ -30,6 +30,7 @@ export const battle = pgTable("battle", {
 
   winner: PlayerEnum("winner"),
   outcome: BattleOutcomeEnum("outcome"),
+  game_end_reason: text("game_end_reason"),
 
   created_at: timestamp("created_at").notNull().defaultNow(),
 });

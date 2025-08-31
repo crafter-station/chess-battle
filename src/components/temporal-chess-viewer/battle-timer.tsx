@@ -2,12 +2,14 @@
 
 import * as React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import type { GameEndReason } from "@/lib/game-end-reason";
 
 interface BattleTimerProps {
   battle: {
     created_at: string;
     winner?: "white" | "black" | null;
     outcome?: "win" | "draw" | null;
+    game_end_reason?: GameEndReason | null;
   };
   moves: Array<{
     created_at: string;
@@ -62,16 +64,58 @@ export function BattleTimer({ battle, moves }: BattleTimerProps) {
   }, [isGameEnded, endTime, currentTime, startTime]);
 
   const getTimerStatus = () => {
+    if (!battle.outcome) {
+      return { text: "IN_PROGRESS", color: "text-blue-400", description: null };
+    }
+
+    const reason = battle.game_end_reason;
+
     if (battle.outcome === "draw") {
-      return { text: "DRAW", color: "text-yellow-400" };
+      const drawReasons: Record<GameEndReason, string> = {
+        stalemate: "by Stalemate",
+        insufficient_material: "by Insufficient Material",
+        threefold_repetition: "by Threefold Repetition",
+        timeout: "by Timeout",
+        agreement: "by Agreement",
+        draw: "by Agreement",
+        checkmate: "", // shouldn't happen for draws
+        resignation: "", // shouldn't happen for draws
+        forfeit_invalid_moves: "", // shouldn't happen for draws
+      };
+
+      const description = reason ? drawReasons[reason] || "" : "";
+      return {
+        text: "DRAW",
+        color: "text-yellow-400",
+        description: description || null,
+      };
     }
-    if (battle.winner === "white") {
-      return { text: "WHITE_WINS", color: "text-green-400" };
+
+    if (battle.winner) {
+      const winReasons: Record<GameEndReason, string> = {
+        checkmate: "by Checkmate",
+        resignation: "by Resignation",
+        forfeit_invalid_moves: "by Forfeit",
+        timeout: "by Timeout",
+        stalemate: "by Tiebreaker", // draw with tiebreaker
+        insufficient_material: "by Tiebreaker",
+        threefold_repetition: "by Tiebreaker",
+        agreement: "by Tiebreaker",
+        draw: "by Tiebreaker",
+      };
+
+      const winnerText =
+        battle.winner === "white" ? "WHITE_WINS" : "BLACK_WINS";
+      const description = reason ? winReasons[reason] || "" : "";
+
+      return {
+        text: winnerText,
+        color: "text-green-400",
+        description: description || null,
+      };
     }
-    if (battle.winner === "black") {
-      return { text: "BLACK_WINS", color: "text-green-400" };
-    }
-    return { text: "IN_PROGRESS", color: "text-blue-400" };
+
+    return { text: "COMPLETED", color: "text-gray-400", description: null };
   };
 
   const status = getTimerStatus();
@@ -89,6 +133,11 @@ export function BattleTimer({ battle, moves }: BattleTimerProps) {
           <div className={`terminal-text text-sm ${status.color}`}>
             {status.text}
           </div>
+          {status.description && (
+            <div className="terminal-text text-xs opacity-70 mt-1">
+              {status.description}
+            </div>
+          )}
         </div>
 
         <div className="space-y-1 font-mono text-xs">

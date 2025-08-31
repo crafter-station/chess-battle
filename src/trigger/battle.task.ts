@@ -4,6 +4,7 @@ import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/db";
 import * as schema from "@/db/schema";
+import type { GameEndReason } from "@/lib/game-end-reason";
 import { nanoid } from "@/lib/nanoid";
 import { GetNextMoveTask } from "./get-next-move.task";
 
@@ -12,6 +13,7 @@ const CONFIG = {
   MAX_INVALID_MOVES: 2, // Consecutive invalid moves before random fallback
   MAX_INVALID_MOVES_PER_PLAYER: 10, // Total invalid moves per player before forfeit
   MAX_GAME_MOVES: 100, // Prevent infinite games
+  MAX_MOVE_GENERATION_TIME: 30, // Max time to generate a move
 } as const;
 
 /**
@@ -83,7 +85,7 @@ export const BattleTask = schemaTask({
     let winner: string | null = null;
     let outcome: "win" | "draw" | null = null;
     let winnerColor: "white" | "black" | null = null;
-    let gameEndReason = "";
+    let gameEndReason: GameEndReason | null = null;
 
     try {
       // Main game loop with timeout protection
@@ -104,19 +106,53 @@ export const BattleTask = schemaTask({
         );
 
         // Generate next move with timeout handling
-        const nextMoveResult = await GetNextMoveTask.triggerAndWait({
-          board: chess.fen(),
-          whitePlayerModelId: battle.whitePlayer.model_id,
-          blackPlayerModelId: battle.blackPlayer.model_id,
-          lastInvalidMoves,
-        });
+        const nextMoveResult = await GetNextMoveTask.triggerAndWait(
+          {
+            board: chess.fen(),
+            whitePlayerModelId: battle.whitePlayer.model_id,
+            blackPlayerModelId: battle.blackPlayer.model_id,
+            lastInvalidMoves,
+          },
+          { maxDuration: CONFIG.MAX_MOVE_GENERATION_TIME },
+        );
 
         if (!nextMoveResult.ok) {
           logger.error(`Failed to get next move: ${nextMoveResult.error}`);
-          throw new BattleError(
-            `Failed to get next move for ${currentPlayer}: ${nextMoveResult.error}`,
-            "MOVE_GENERATION_FAILED",
-          );
+          if (
+            nextMoveResult.error instanceof Error &&
+            nextMoveResult.error.message.includes("maxDuration")
+          ) {
+            await db.insert(schema.move).values({
+              id: nanoid(),
+              battle_id: payload.battleId,
+              user_id: payload.userId,
+              player_id: playerId,
+              move: null,
+              state: chess.fen(),
+              is_valid: false,
+              tokens_in: null,
+              tokens_out: null,
+              response_time: CONFIG.MAX_MOVE_GENERATION_TIME * 1000,
+              confidence: null,
+              reasoning: "Move generation timed out",
+            });
+
+            lastInvalidMoves.push("");
+
+            // Track invalid moves per player
+            if (chess.turn() === "w") {
+              whiteInvalidMoves++;
+            } else {
+              blackInvalidMoves++;
+            }
+
+            continue;
+          } else {
+            throw new BattleError(
+              `Failed to get next move for ${currentPlayer}: ${nextMoveResult.error}`,
+              "MOVE_GENERATION_FAILED",
+            );
+          }
         }
 
         let isValid = true;
@@ -225,7 +261,7 @@ export const BattleTask = schemaTask({
             is_valid: true,
             tokens_in: null,
             tokens_out: null,
-            response_time: null,
+            response_time: CONFIG.MAX_MOVE_GENERATION_TIME * 1000,
             confidence: null,
             reasoning: "Random fallback move due to repeated invalid moves",
           });
@@ -260,10 +296,21 @@ export const BattleTask = schemaTask({
           `🚫 ${forfeitingPlayer} forfeited due to excessive invalid moves. ${winningPlayer} wins by forfeit.`,
         );
       } else if (error instanceof GameTimeoutError) {
-        // Handle timeout - could be treated as a draw or decide by other criteria
-        outcome = "draw";
+        // Handle timeout - determine winner based on time efficiency
+        logger.warn(
+          "Game ended due to timeout - determining winner by time efficiency",
+        );
+
+        const timeEfficiencyResult = await determineWinnerByTimeEfficiency(
+          payload.battleId,
+          battle,
+          "timeout",
+        );
+
+        winner = timeEfficiencyResult.winner;
+        winnerColor = timeEfficiencyResult.winnerColor;
+        outcome = timeEfficiencyResult.outcome;
         gameEndReason = "timeout";
-        logger.warn("Game ended due to timeout - treating as draw");
       } else {
         // Re-throw unexpected errors
         throw error;
@@ -300,75 +347,17 @@ export const BattleTask = schemaTask({
             ? "insufficient_material"
             : chess.isThreefoldRepetition()
               ? "threefold_repetition"
-              : "other";
+              : null;
 
-        // For draws, we could implement different tiebreaker strategies:
-        // 1. No winner (true draw)
-        // 2. Faster average response time wins
-        // 3. Better move quality (confidence scores) wins
-
-        // Currently using response time as tiebreaker (fastest wins)
-        const moves = await db.query.move.findMany({
-          where: and(eq(schema.move.battle_id, payload.battleId)),
-        });
-
-        const whiteMoves = moves.filter(
-          (m) =>
-            m.player_id === battle.whitePlayer.id && m.response_time !== null,
-        );
-        const blackMoves = moves.filter(
-          (m) =>
-            m.player_id === battle.blackPlayer.id && m.response_time !== null,
+        // For draws, use time efficiency as tiebreaker
+        const timeEfficiencyResult = await determineWinnerByTimeEfficiency(
+          payload.battleId,
+          battle,
+          gameEndReason ?? "draw",
         );
 
-        const avgResponseTimeWhite =
-          whiteMoves.length > 0
-            ? whiteMoves.reduce(
-                (acc, move) => acc + (move.response_time ?? 0),
-                0,
-              ) / whiteMoves.length
-            : Number.MAX_SAFE_INTEGER;
-
-        const avgResponseTimeBlack =
-          blackMoves.length > 0
-            ? blackMoves.reduce(
-                (acc, move) => acc + (move.response_time ?? 0),
-                0,
-              ) / blackMoves.length
-            : Number.MAX_SAFE_INTEGER;
-
-        // Faster average response time wins the tiebreaker
-        if (avgResponseTimeWhite < avgResponseTimeBlack) {
-          winner = battle.white_player_id;
-          winnerColor = "white";
-        } else if (avgResponseTimeBlack < avgResponseTimeWhite) {
-          winner = battle.black_player_id;
-          winnerColor = "black";
-        } else {
-          // True draw if response times are equal
-          winner = null;
-          winnerColor = null;
-        }
-
-        logger.info(
-          `🤝 Draw by ${gameEndReason}. ${
-            winner
-              ? `Tiebreaker: ${winnerColor} (${
-                  winnerColor === "white"
-                    ? battle.whitePlayer.model_id
-                    : battle.blackPlayer.model_id
-                }) wins by faster average response time (${
-                  winnerColor === "white"
-                    ? avgResponseTimeWhite.toFixed(0)
-                    : avgResponseTimeBlack.toFixed(0)
-                }ms vs ${
-                  winnerColor === "white"
-                    ? avgResponseTimeBlack.toFixed(0)
-                    : avgResponseTimeWhite.toFixed(0)
-                }ms)`
-              : "True draw - equal performance"
-          }`,
-        );
+        winner = timeEfficiencyResult.winner;
+        winnerColor = timeEfficiencyResult.winnerColor;
       }
     }
 
@@ -378,6 +367,7 @@ export const BattleTask = schemaTask({
       .set({
         outcome,
         winner: winnerColor,
+        game_end_reason: gameEndReason,
       })
       .where(eq(schema.battle.id, payload.battleId));
 
@@ -388,7 +378,13 @@ export const BattleTask = schemaTask({
               winnerColor === "white"
                 ? battle.whitePlayer.model_id
                 : battle.blackPlayer.model_id
-            }) ${outcome === "win" ? "won" : "won tiebreaker"}`
+            }) ${
+              gameEndReason === "timeout"
+                ? "won by time efficiency"
+                : outcome === "win"
+                  ? "won"
+                  : "won tiebreaker"
+            }`
           : "True draw"
       } in ${totalMoves} moves`,
     );
@@ -453,4 +449,96 @@ class PlayerForfeitError extends BattleError {
       "PLAYER_FORFEIT",
     );
   }
+}
+
+/**
+ * Calculates time efficiency and determines winner based on average response times
+ */
+async function determineWinnerByTimeEfficiency(
+  battleId: string,
+  battle: {
+    whitePlayer: { id: string; model_id: string };
+    blackPlayer: { id: string; model_id: string };
+    white_player_id: string;
+    black_player_id: string;
+  },
+  context:
+    | "timeout"
+    | "stalemate"
+    | "insufficient_material"
+    | "threefold_repetition"
+    | "draw",
+) {
+  // Get all moves to calculate time efficiency
+  const moves = await db.query.move.findMany({
+    where: and(eq(schema.move.battle_id, battleId)),
+  });
+
+  const whiteMoves = moves.filter(
+    (m) => m.player_id === battle.whitePlayer.id && m.response_time !== null,
+  );
+  const blackMoves = moves.filter(
+    (m) => m.player_id === battle.blackPlayer.id && m.response_time !== null,
+  );
+
+  const avgResponseTimeWhite =
+    whiteMoves.length > 0
+      ? whiteMoves.reduce((acc, move) => acc + (move.response_time ?? 0), 0) /
+        whiteMoves.length
+      : Number.MAX_SAFE_INTEGER;
+
+  const avgResponseTimeBlack =
+    blackMoves.length > 0
+      ? blackMoves.reduce((acc, move) => acc + (move.response_time ?? 0), 0) /
+        blackMoves.length
+      : Number.MAX_SAFE_INTEGER;
+
+  let winner: string | null = null;
+  let winnerColor: "white" | "black" | null = null;
+  let outcome: "win" | "draw" = "draw";
+
+  // More efficient player (faster average response time) wins
+  if (avgResponseTimeWhite < avgResponseTimeBlack) {
+    winner = battle.white_player_id;
+    winnerColor = "white";
+    outcome = "win";
+  } else if (avgResponseTimeBlack < avgResponseTimeWhite) {
+    winner = battle.black_player_id;
+    winnerColor = "black";
+    outcome = "win";
+  }
+  // else: Equal efficiency - remains draw with null winner
+
+  // Log the result
+  const contextEmoji = context === "timeout" ? "🕐" : "🤝";
+  const contextPrefix =
+    context === "timeout" ? "Timeout:" : `Draw by ${context}.`;
+
+  logger.info(
+    outcome === "win"
+      ? `${contextEmoji} ${contextPrefix} ${
+          context === "timeout" ? "" : "Tiebreaker: "
+        }${winnerColor} (${
+          winnerColor === "white"
+            ? battle.whitePlayer.model_id
+            : battle.blackPlayer.model_id
+        }) wins by ${context === "timeout" ? "time efficiency" : "faster average response time"} (${
+          winnerColor === "white"
+            ? avgResponseTimeWhite.toFixed(0)
+            : avgResponseTimeBlack.toFixed(0)
+        }ms vs ${
+          winnerColor === "white"
+            ? avgResponseTimeBlack.toFixed(0)
+            : avgResponseTimeWhite.toFixed(0)
+        }ms avg response time)`
+      : `${contextEmoji} ${contextPrefix} Equal time efficiency - true draw`,
+  );
+
+  return {
+    winner,
+    winnerColor,
+    outcome,
+    avgResponseTimeWhite,
+    avgResponseTimeBlack,
+  };
 }

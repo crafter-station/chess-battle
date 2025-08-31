@@ -6,6 +6,7 @@ import { useParams } from "next/navigation";
 import * as React from "react";
 import { BattleTimer } from "@/components/temporal-chess-viewer/battle-timer";
 import { ChessBoard } from "@/components/temporal-chess-viewer/chess-board";
+import { GameResult } from "@/components/temporal-chess-viewer/game-result";
 import { MoveHistory } from "@/components/temporal-chess-viewer/move-history";
 import { MoveInfo } from "@/components/temporal-chess-viewer/move-info";
 import { NavigationControls } from "@/components/temporal-chess-viewer/navigation-controls";
@@ -13,6 +14,7 @@ import { PlayerCard } from "@/components/temporal-chess-viewer/player-card";
 import { BattlesCollection, PlayersCollection } from "@/db/electric";
 import { useCurrentMove } from "@/hooks/use-current-move";
 import { useMoves } from "@/hooks/use-moves";
+import type { GameEndReason } from "@/lib/game-end-reason";
 
 export function TemporalChessViewer() {
   const { battle_id } = useParams<{ battle_id: string }>();
@@ -87,7 +89,22 @@ export function TemporalChessViewer() {
           {/* Control Panel */}
           <div className="space-y-4">
             {/* Battle Timer */}
-            <BattleTimer battle={battle} moves={moves} />
+            <BattleTimer
+              battle={{
+                ...battle,
+                game_end_reason: battle.game_end_reason as GameEndReason | null,
+              }}
+              moves={moves}
+            />
+
+            {/* Game Result - Only shown when game is over */}
+            <GameResult
+              outcome={battle.outcome}
+              winner={battle.winner}
+              gameEndReason={battle.game_end_reason as GameEndReason | null}
+              whitePlayerModel={battle.white_player?.model_id}
+              blackPlayerModel={battle.black_player?.model_id}
+            />
 
             {/* Current Move Info */}
             <MoveInfo />

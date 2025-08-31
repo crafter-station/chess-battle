@@ -1,4 +1,4 @@
-import { schemaTask } from "@trigger.dev/sdk";
+import { logger, schemaTask } from "@trigger.dev/sdk";
 import { generateObject, type ModelMessage } from "ai";
 import { Chess } from "chess.js";
 import { z } from "zod";
@@ -26,27 +26,27 @@ export const GetNextMoveTask = schemaTask({
       schema: z.object({
         move: z
           .string()
-          .optional()
-          .describe("The best legal move from the provided list"),
+          .describe(
+            "REQUIRED: The exact move from the legal moves list (e.g., 'Nf3', 'e4', 'O-O')",
+          ),
         reasoning: z
           .string()
           .optional()
           .describe(
-            "Brief explanation: MAX 100 words OR 2 sentences (whichever is shorter). Keep it concise.",
+            "REQUIRED: Brief tactical/strategic explanation (MAX 100 words OR 2 sentences)",
           ),
         confidence: z
           .number()
-          .int()
-          .min(0)
-          .max(100)
           .optional()
           .describe(
-            "Integer confidence score 0-100 (how certain you are about this move)",
+            "REQUIRED: Integer confidence score 1-100 (how certain you are about this move)",
           ),
       }),
       messages: constructMessages(chess, payload.lastInvalidMoves),
       experimental_repairText: async () => {
-        return "{}";
+        return JSON.stringify({
+          move: "",
+        });
       },
       experimental_telemetry: {
         isEnabled: true,
@@ -76,9 +76,11 @@ export const GetNextMoveTask = schemaTask({
       rawResponse = null;
     }
 
+    logger.info(`Raw response: ${rawResponse}`);
+
     return {
       responseTime,
-      move,
+      move: move ? move : null,
       tokensIn,
       tokensOut,
       reasoning: generateMoveResult.object.reasoning,
@@ -106,69 +108,116 @@ function constructMessages(chess: Chess, lastInvalidMoves: string[]) {
   return [
     {
       role: "system",
-      content: `You are a chess engine analyzing positions with deep strategic understanding. Study the board visualization and game context carefully before selecting your move.
+      content: `🏁 CHESS ANALYSIS ENGINE - STRICT JSON OUTPUT REQUIRED 🏁
 
-ANALYSIS PRIORITIES (in order):
-1. TACTICAL: Checkmate threats, material captures, tactical motifs (pins, forks, skewers, discovered attacks)
-2. SAFETY: King safety, escape squares, defensive resources
-3. POSITIONAL: Piece activity, center control, pawn structure, space advantage
-4. STRATEGIC: Development, coordination, long-term plans
+You are a master-level chess engine. Analyze the position and return your response in EXACT JSON format.
 
-EVALUATION FACTORS:
-• Material count and piece values
-• King safety and castling rights  
-• Piece coordination and activity
-• Pawn structure weaknesses/strengths
-• Control of key squares (center, outposts)
-• Open files and diagonals
-• Tactical opportunities and threats
+⚠️ CRITICAL: You MUST return ONLY a valid JSON object. NO other text before or after.
 
-DECISION PROCESS:
-1. Check for immediate tactical shots (checkmate, material gain)
-2. Assess threats against your king and pieces
-3. Look for forcing moves (checks, captures, threats)
-4. Evaluate positional improvements
-5. Consider opponent's likely responses
+📋 REQUIRED JSON STRUCTURE:
+{
+  "move": "EXACT_MOVE_FROM_LIST",
+  "reasoning": "Brief explanation (max 100 words)",
+  "confidence": INTEGER_1_TO_100
+}
 
-STRICT OUTPUT FORMAT:
-{"move":"Nf3","reasoning":"Brief tactical/strategic explanation.","confidence":85}
+🎯 ANALYSIS PRIORITIES:
+1. CHECKMATE/THREATS: Immediate mate, material wins, forced sequences
+2. KING SAFETY: Escape squares, defensive resources, attack prevention  
+3. TACTICS: Pins, forks, skewers, discovered attacks, sacrifices
+4. POSITION: Piece activity, center control, pawn structure, space
+5. STRATEGY: Development, coordination, long-term planning
 
-CRITICAL REQUIREMENTS:
-• MOVE: Must be from the provided legal moves list EXACTLY as written
-• REASONING: Maximum 100 words OR 2 sentences - focus on key factors
-• CONFIDENCE: Integer 0-100 based on position clarity and move strength
-• Return ONLY the JSON object - no extra text or formatting
+📊 EVALUATION CHECKLIST:
+✓ Material balance and piece values
+✓ King safety and castling status
+✓ Piece coordination and mobility
+✓ Pawn structure strengths/weaknesses
+✓ Control of key squares (center, outposts)
+✓ Open files, diagonals, and weak squares
+✓ Immediate tactical opportunities
 
-REASONING EXAMPLES:
-✓ "Wins material with Rxe7+ fork, attacking king and bishop."
-✓ "Develops with tempo, attacking f7 weakness while preparing O-O."
-✗ "This is a good developing move that follows opening principles and improves piece coordination while maintaining a solid position for the middlegame phase."`,
+🔍 MOVE SELECTION PROCESS:
+1. Scan for forced wins (checkmate in 1-3 moves)
+2. Check for material-winning tactics
+3. Assess and counter immediate threats
+4. Look for forcing moves (checks, captures, threats)
+5. Evaluate positional improvements
+6. Consider opponent's best responses
+
+💡 REASONING EXAMPLES (GOOD):
+✓ "Rxe7+ wins the bishop with check, gaining material advantage."
+✓ "Develops knight attacking f7 weakness while preparing castling."
+✓ "Controls the center and prevents opponent's knight development."
+✓ "Forces mate in 3: after Qh6 threatens Qxh7#, defense impossible."
+
+❌ REASONING EXAMPLES (TOO LONG):
+✗ "This developing move follows classical opening principles by improving piece coordination and maintaining a solid defensive structure while preparing for the middlegame transition with strategic planning considerations."
+
+🎯 CONFIDENCE SCORING:
+• 90-100: Forced mate, clear material win, obvious best move
+• 80-89: Strong tactical advantage, clearly superior position
+• 70-79: Good positional move, slight advantage
+• 60-69: Reasonable choice among several options
+• 50-59: Uncertain position, multiple viable moves
+• 1-49: Defensive/desperate moves, difficult position
+
+⚠️ ABSOLUTE REQUIREMENTS:
+1. MOVE must be EXACTLY from the legal moves list (case-sensitive)
+2. REASONING must be under 100 words (brief and focused)
+3. CONFIDENCE must be integer 1-100 (no decimals)
+4. Return ONLY the JSON object (no extra text, quotes, or formatting)
+5. JSON must be valid and parseable
+
+🚨 FORBIDDEN RESPONSES:
+- Any text before the JSON object
+- Any text after the JSON object  
+- Incomplete JSON objects
+- Invalid JSON syntax
+- Moves not in the legal moves list
+- Confidence scores of 0 or over 100
+
+EXAMPLE VALID RESPONSES:
+{"move":"e4","reasoning":"Controls center, opens diagonals for development.","confidence":75}
+{"move":"Qxh7#","reasoning":"Checkmate! Queen captures pawn with mate.","confidence":100}
+{"move":"Nf3","reasoning":"Develops piece toward center, prepares castling.","confidence":70}`,
     },
     {
       role: "user",
-      content: `POSITION ANALYSIS - Move ${moveNumber} (${currentPlayer} to move)
+      content: `🎯 POSITION ANALYSIS - Move ${moveNumber} (${currentPlayer} to move)
 
-BOARD VISUALIZATION:
+📋 BOARD VISUALIZATION:
 ${chess.ascii()}
 
-GAME STATE:
+📊 GAME STATE:
 • FEN: ${chess.fen()}
-• ${isCheck ? "⚠️  IN CHECK" : ""}${isCheckmate ? "🏁 CHECKMATE" : ""}${isStalemate ? "🔄 STALEMATE" : ""}${isDraw ? "🤝 DRAW" : ""}
+• Status: ${isCheck ? "⚠️  IN CHECK" : ""}${isCheckmate ? "🏁 CHECKMATE" : ""}${isStalemate ? "🔄 STALEMATE" : ""}${isDraw ? "🤝 DRAW" : ""}
 • Recent moves: ${recentMoves || "Game start"}
 • Legal moves available: ${validMoves.length}
 
-LEGAL MOVES: [${validMoves.join(", ")}]
+🎲 LEGAL MOVES (choose EXACTLY from this list):
+[${validMoves.join(", ")}]
 
 ${
   lastInvalidMoves.length > 0
     ? `❌ PREVIOUS INVALID ATTEMPTS: ${lastInvalidMoves
         .filter((move) => !!move)
         .join(", ")}
-REMINDER: Choose ONLY from the legal moves list above!
+
+🚨 CRITICAL: These moves were rejected! Choose ONLY from the legal moves list above!
 
 `
     : ""
-}Analyze the position and return your move:`,
+}🎯 REQUIRED OUTPUT FORMAT:
+{"move":"YOUR_MOVE","reasoning":"Your brief explanation","confidence":YOUR_SCORE}
+
+⚠️ REMINDERS:
+• Move MUST be from legal moves list EXACTLY as written
+• Return ONLY the JSON object (no other text)
+• Reasoning max 100 words
+• Confidence 1-100 (integer only)
+
+Analyze the position and provide your JSON response:`,
     },
   ] satisfies ModelMessage[];
 }

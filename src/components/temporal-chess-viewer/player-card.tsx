@@ -1,16 +1,16 @@
 "use client";
 
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { eq, useLiveQuery } from "@tanstack/react-db";
+import { useParams } from "next/navigation";
+import React from "react";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   AIModelsCollection,
   MovesCollection,
   PlayersCollection,
 } from "@/db/electric";
 import { cn } from "@/lib/utils";
-import { useParams } from "next/navigation";
-import React from "react";
 
 export function PlayerCard({
   playerId,
@@ -30,13 +30,13 @@ export function PlayerCard({
         player: PlayersCollection,
       })
       .leftJoin({ model: AIModelsCollection }, ({ player, model }) =>
-        eq(player.model_id, model.canonical_id)
+        eq(player.model_id, model.canonical_id),
       )
       .where(({ player }) => eq(player.id, playerId))
       .select(({ model, player }) => ({
         ...player,
         model,
-      }))
+      })),
   );
 
   const { data: moves } = useLiveQuery((q) =>
@@ -45,7 +45,7 @@ export function PlayerCard({
         move: MovesCollection,
       })
       .where(({ move }) => eq(move.player_id, playerId))
-      .where(({ move }) => eq(move.battle_id, battle_id))
+      .where(({ move }) => eq(move.battle_id, battle_id)),
   );
 
   const totalMoves = React.useMemo(() => {
@@ -87,7 +87,9 @@ export function PlayerCard({
           <Badge
             variant={isActive ? "default" : "secondary"}
             className={cn(
-              isActive ? "text-primary-foreground" : "text-secondary-foreground"
+              isActive
+                ? "text-primary-foreground"
+                : "text-secondary-foreground",
             )}
           >
             {color === "WHITE" ? "♔" : "♛"} {color}

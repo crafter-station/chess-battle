@@ -1,7 +1,6 @@
 import { createHash } from "node:crypto";
-import { headers } from "next/headers";
 import { auth } from "@clerk/nextjs/server";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { nanoid } from "@/lib/nanoid";
 
 export async function getUser() {

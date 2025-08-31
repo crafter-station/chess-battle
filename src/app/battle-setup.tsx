@@ -39,7 +39,7 @@ export default function BattleSetup() {
             name: m.name ?? null,
             description: m.description ?? null,
             logo_url: m.logo_url ?? null,
-          }))
+          })),
         );
       })
       .catch(() => setCatalog([]));
@@ -55,7 +55,7 @@ export default function BattleSetup() {
 
   const optimisticStart = React.useMemo(
     () => createStartBattleOptimistic(action),
-    [action]
+    [action],
   );
 
   React.useEffect(() => {
@@ -129,7 +129,7 @@ export default function BattleSetup() {
           />
 
           <form
-            action={async (formData) => {
+            action={async (_formData) => {
               if (!whiteModel || !blackModel) return;
               const id = nanoid();
               optimisticStart({

@@ -26,7 +26,7 @@ const players = models.map(
       id: nanoid(),
       model_id: model,
       user_id: userId,
-    } satisfies schema.PlayerInsert)
+    }) satisfies schema.PlayerInsert,
 );
 
 await db.insert(schema.player).values(players);

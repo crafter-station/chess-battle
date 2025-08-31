@@ -1,18 +1,16 @@
 "use client";
 
 import { eq, useLiveQuery } from "@tanstack/react-db";
+import { Chess } from "chess.js";
 import { useParams } from "next/navigation";
-
+import * as React from "react";
 import { ChessBoard } from "@/components/temporal-chess-viewer/chess-board";
 import { MoveHistory } from "@/components/temporal-chess-viewer/move-history";
 import { MoveInfo } from "@/components/temporal-chess-viewer/move-info";
 import { NavigationControls } from "@/components/temporal-chess-viewer/navigation-controls";
 import { PlayerCard } from "@/components/temporal-chess-viewer/player-card";
-
 import { BattlesCollection, PlayersCollection } from "@/db/electric";
 import { useCurrentMove } from "@/hooks/use-current-move";
-import { Chess } from "chess.js";
-import * as React from "react";
 
 export function TemporalChessViewer() {
   const { battle_id } = useParams<{ battle_id: string }>();
@@ -23,19 +21,19 @@ export function TemporalChessViewer() {
       .leftJoin(
         { white_player: PlayersCollection },
         ({ battle, white_player }) =>
-          eq(battle.white_player_id, white_player.id)
+          eq(battle.white_player_id, white_player.id),
       )
       .leftJoin(
         { black_player: PlayersCollection },
         ({ battle, black_player }) =>
-          eq(battle.black_player_id, black_player.id)
+          eq(battle.black_player_id, black_player.id),
       )
       .where(({ battle }) => eq(battle.id, battle_id))
       .select(({ battle, white_player, black_player }) => ({
         ...battle,
         white_player,
         black_player,
-      }))
+      })),
   );
 
   const currentMove = useCurrentMove();

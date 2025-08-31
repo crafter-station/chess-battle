@@ -1,5 +1,5 @@
-import { createCollection } from "@tanstack/react-db";
 import { electricCollectionOptions } from "@tanstack/electric-db-collection";
+import { createCollection } from "@tanstack/react-db";
 import type { BattleSelect, MoveSelect, PlayerSelect } from "@/db/schema";
 
 const BASE_URL = process.env.NEXT_PUBLIC_URL ?? "";
@@ -11,7 +11,7 @@ export const battlesCollection = createCollection<BattleSelect>(
       url: `${BASE_URL}/api/shapes/battles`,
     },
     getKey: (item) => item.id,
-  })
+  }),
 );
 
 export const playersCollection = createCollection<PlayerSelect>(
@@ -21,7 +21,7 @@ export const playersCollection = createCollection<PlayerSelect>(
       url: `${BASE_URL}/api/shapes/players`,
     },
     getKey: (item) => item.id,
-  })
+  }),
 );
 
 export function battleByIdCollection(battleId: string) {
@@ -32,7 +32,7 @@ export function battleByIdCollection(battleId: string) {
         url: `${BASE_URL}/api/shapes/battles/${battleId}`,
       },
       getKey: (item) => item.id,
-    })
+    }),
   );
 }
 
@@ -44,7 +44,7 @@ export function movesByBattleCollection(battleId: string) {
         url: `${BASE_URL}/api/shapes/battles/${battleId}/moves`,
       },
       getKey: (item) => item.id,
-    })
+    }),
   );
 }
 
@@ -56,6 +56,6 @@ export function playerByIdCollection(playerId: string) {
         url: `${BASE_URL}/api/shapes/players/${playerId}`,
       },
       getKey: (item) => item.id,
-    })
+    }),
   );
 }

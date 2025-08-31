@@ -15,16 +15,16 @@ export function Navbar() {
                   CHESS_BATTLE_SYSTEM.exe
                 </span>
               </Link>
-              
+
               <div className="flex items-center space-x-6">
-                <Link 
-                  href="/" 
+                <Link
+                  href="/"
                   className="terminal-text hover:text-terminal-accent transition-colors font-mono text-sm"
                 >
                   &gt; HOME
                 </Link>
-                <Link 
-                  href="/tournaments" 
+                <Link
+                  href="/tournaments"
                   className="terminal-text hover:text-terminal-accent transition-colors font-mono text-sm"
                 >
                   &gt; CREATE_TOURNAMENT

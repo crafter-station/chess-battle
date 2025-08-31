@@ -6,10 +6,9 @@ import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-
+import { useAudio } from "@/hooks/use-audio";
 import { useMoveIndex } from "@/hooks/use-move-index";
 import { useMoves } from "@/hooks/use-moves";
-import { useAudio } from "@/hooks/use-audio";
 
 export function NavigationControls() {
   const { battle_id } = useParams<{ battle_id: string }>();
@@ -68,7 +67,7 @@ export function NavigationControls() {
         playBeep(100, 90, 0.8);
       }
     },
-    [setMoveIndex, playBeep, moves]
+    [setMoveIndex, playBeep, moves],
   );
 
   // Clear number input buffer and hide indicator
@@ -110,7 +109,7 @@ export function NavigationControls() {
         executeNumberNavigation();
       }, 1500);
     },
-    [executeNumberNavigation]
+    [executeNumberNavigation],
   );
 
   const progressPercentage =

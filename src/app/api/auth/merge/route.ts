@@ -1,8 +1,8 @@
 import { auth } from "@clerk/nextjs/server";
+import { eq } from "drizzle-orm";
 import { cookies } from "next/headers";
 import { db } from "@/db";
 import * as schema from "@/db/schema";
-import { eq } from "drizzle-orm";
 
 export async function POST() {
   const { userId } = await auth();
@@ -21,14 +21,23 @@ export async function POST() {
   }
 
   // Reassign ownership from anon -> authed user
-  await db.update(schema.battle).set({ user_id: userId }).where(eq(schema.battle.user_id, anonId));
-  await db.update(schema.player).set({ user_id: userId }).where(eq(schema.player.user_id, anonId));
-  await db.update(schema.move).set({ user_id: userId }).where(eq(schema.move.user_id, anonId));
+  await db
+    .update(schema.battle)
+    .set({ user_id: userId })
+    .where(eq(schema.battle.user_id, anonId));
+  await db
+    .update(schema.player)
+    .set({ user_id: userId })
+    .where(eq(schema.player.user_id, anonId));
+  await db
+    .update(schema.move)
+    .set({ user_id: userId })
+    .where(eq(schema.move.user_id, anonId));
 
   // Clear anon cookie after merge
   cookieStore.set("anon_user_id", "", { path: "/", maxAge: 0 });
 
-  return new Response(JSON.stringify({ ok: true, merged: true }), { status: 200 });
+  return new Response(JSON.stringify({ ok: true, merged: true }), {
+    status: 200,
+  });
 }
-
-

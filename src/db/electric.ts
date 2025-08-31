@@ -2,10 +2,10 @@ import { electricCollectionOptions } from "@tanstack/electric-db-collection";
 import { createCollection } from "@tanstack/react-db";
 
 import type {
+  AIModelSelect,
   BattleSelect,
   MoveSelect,
   PlayerSelect,
-  AIModelSelect,
   TournamentSelect,
 } from "./schema";
 
@@ -18,7 +18,7 @@ export const BattlesCollection = createCollection<
       url: `${process.env.NEXT_PUBLIC_URL}/api/electric/battles`,
     },
     getKey: (item) => item.id,
-  })
+  }),
 );
 
 export const TournamentsCollection = createCollection<
@@ -30,7 +30,7 @@ export const TournamentsCollection = createCollection<
       url: `${process.env.NEXT_PUBLIC_URL}/api/electric/tournaments`,
     },
     getKey: (item) => item.id,
-  })
+  }),
 );
 
 export const PlayersCollection = createCollection<
@@ -42,7 +42,7 @@ export const PlayersCollection = createCollection<
       url: `${process.env.NEXT_PUBLIC_URL}/api/electric/players`,
     },
     getKey: (item) => item.id,
-  })
+  }),
 );
 
 export const MovesCollection = createCollection<
@@ -56,7 +56,7 @@ export const MovesCollection = createCollection<
       url: `${process.env.NEXT_PUBLIC_URL}/api/electric/moves`,
     },
     getKey: (item) => item.id,
-  })
+  }),
 );
 
 export const AIModelsCollection = createCollection<
@@ -68,5 +68,5 @@ export const AIModelsCollection = createCollection<
       url: `${process.env.NEXT_PUBLIC_URL}/api/electric/ai-models`,
     },
     getKey: (item) => item.id,
-  })
+  }),
 );

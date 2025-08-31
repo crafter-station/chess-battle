@@ -1,15 +1,12 @@
 "use client";
 
-import * as React from "react";
-import { useLiveQuery, eq } from "@tanstack/react-db";
-import { Chessboard, defaultPieces } from "react-chessboard";
-import { useParams } from "next/navigation";
-
-import { Card } from "@/components/ui/card";
-
-import { BattlesCollection, PlayersCollection } from "@/db/electric";
-
+import { eq, useLiveQuery } from "@tanstack/react-db";
 import { Chess } from "chess.js";
+import { useParams } from "next/navigation";
+import * as React from "react";
+import { Chessboard, defaultPieces } from "react-chessboard";
+import { Card } from "@/components/ui/card";
+import { BattlesCollection, PlayersCollection } from "@/db/electric";
 import { useCurrentMove } from "@/hooks/use-current-move";
 
 export function ChessBoard() {
@@ -22,19 +19,19 @@ export function ChessBoard() {
       .leftJoin(
         { white_player: PlayersCollection },
         ({ battle, white_player }) =>
-          eq(battle.white_player_id, white_player.id)
+          eq(battle.white_player_id, white_player.id),
       )
       .leftJoin(
         { black_player: PlayersCollection },
         ({ battle, black_player }) =>
-          eq(battle.black_player_id, black_player.id)
+          eq(battle.black_player_id, black_player.id),
       )
       .where(({ battle }) => eq(battle.id, battle_id))
       .select(({ battle, white_player, black_player }) => ({
         ...battle,
         white_player,
         black_player,
-      }))
+      })),
   );
 
   // Create game over info from battle properties
@@ -49,8 +46,8 @@ export function ChessBoard() {
         battle.winner === "white"
           ? "White"
           : battle.winner === "black"
-          ? "Black"
-          : undefined,
+            ? "Black"
+            : undefined,
       draw: battle.outcome === "draw",
     };
   }, [battle?.outcome, battle?.winner]);

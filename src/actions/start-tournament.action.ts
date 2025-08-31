@@ -1,12 +1,12 @@
 "use server";
 
+import { auth } from "@clerk/nextjs/server";
+import { cookies } from "next/headers";
 import { db } from "@/db";
 import * as schema from "@/db/schema";
 import { getUser } from "@/lib/get-user";
 import { nanoid } from "@/lib/nanoid";
 import { TournamentTask } from "@/trigger/tournament.task";
-import { auth } from "@clerk/nextjs/server";
-import { cookies } from "next/headers";
 
 export interface TournamentMatch {
   whitePlayerModelId: string;
@@ -34,12 +34,15 @@ export type StartTournamentActionState = {
 
 export async function StartTournamentAction(
   _prevState: StartTournamentActionState,
-  formData: FormData
+  formData: FormData,
 ): Promise<StartTournamentActionState> {
   const tournamentName = formData.get("tournamentName")?.toString();
-  const tournamentSize = Number.parseInt(formData.get("tournamentSize")?.toString() || "0", 10);
+  const tournamentSize = Number.parseInt(
+    formData.get("tournamentSize")?.toString() || "0",
+    10,
+  );
   const matchesJson = formData.get("matches")?.toString();
-  
+
   let matches: TournamentMatch[] = [];
   try {
     matches = matchesJson ? JSON.parse(matchesJson) : [];
@@ -69,9 +72,9 @@ export async function StartTournamentAction(
     if (matches.length !== expectedMatches) {
       return {
         input,
-        output: { 
-          success: false, 
-          error: `Expected ${expectedMatches} matches for ${tournamentSize} players, got ${matches.length}` 
+        output: {
+          success: false,
+          error: `Expected ${expectedMatches} matches for ${tournamentSize} players, got ${matches.length}`,
         },
       };
     }
@@ -81,7 +84,10 @@ export async function StartTournamentAction(
       if (!match.whitePlayerModelId || !match.blackPlayerModelId) {
         return {
           input,
-          output: { success: false, error: "All matches must have both white and black players" },
+          output: {
+            success: false,
+            error: "All matches must have both white and black players",
+          },
         };
       }
     }
@@ -118,7 +124,7 @@ export async function StartTournamentAction(
     // Create players and battles for first round
     for (let i = 0; i < matches.length; i++) {
       const match = matches[i];
-      
+
       const whitePlayerId = nanoid();
       const blackPlayerId = nanoid();
       const battleId = nanoid();

@@ -1,11 +1,11 @@
 import { createOptimisticAction } from "@tanstack/react-db";
-import { nanoid } from "@/lib/nanoid";
 import {
-  battlesCollection,
-  playersCollection,
-  movesByBattleCollection,
   battleByIdCollection,
+  battlesCollection,
+  movesByBattleCollection,
+  playersCollection,
 } from "@/lib/collections";
+import { nanoid } from "@/lib/nanoid";
 
 export type StartBattleOptimisticInput = {
   whitePlayerModelId: string;
@@ -21,7 +21,7 @@ export type StartBattleOptimisticIds = {
 
 // Applies local optimistic inserts and returns the placeholder IDs.
 export function createStartBattleOptimistic(
-  submit: (formData: FormData) => Promise<unknown> | void
+  submit: (formData: FormData) => Promise<unknown> | undefined,
 ) {
   return createOptimisticAction<StartBattleOptimisticInput>({
     onMutate: (input) => {

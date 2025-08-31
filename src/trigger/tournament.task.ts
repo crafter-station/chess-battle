@@ -3,8 +3,8 @@ import { and, asc, eq } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/db";
 import * as schema from "@/db/schema";
-import { BattleTask } from "./battle.task";
 import { nanoid } from "@/lib/nanoid";
+import { BattleTask } from "./battle.task";
 
 export const TournamentTask = schemaTask({
   id: "tournament",
@@ -16,7 +16,7 @@ export const TournamentTask = schemaTask({
     const tournament = await db.query.tournament.findFirst({
       where: and(
         eq(schema.tournament.id, payload.tournamentId),
-        eq(schema.tournament.user_id, payload.userId)
+        eq(schema.tournament.user_id, payload.userId),
       ),
     });
 
@@ -30,7 +30,7 @@ export const TournamentTask = schemaTask({
         where: and(
           eq(schema.battle.tournament_id, payload.tournamentId),
           eq(schema.battle.user_id, payload.userId),
-          eq(schema.battle.tournament_round, round)
+          eq(schema.battle.tournament_round, round),
         ),
       });
 
@@ -41,14 +41,14 @@ export const TournamentTask = schemaTask({
             userId: payload.userId,
           },
           task: BattleTask,
-        }))
+        })),
       );
 
       const roundBattles = await db.query.battle.findMany({
         where: and(
           eq(schema.battle.tournament_id, payload.tournamentId),
           eq(schema.battle.user_id, payload.userId),
-          eq(schema.battle.tournament_round, round)
+          eq(schema.battle.tournament_round, round),
         ),
         orderBy: [asc(schema.battle.tournament_round_position)],
       });
@@ -59,10 +59,10 @@ export const TournamentTask = schemaTask({
 
       for (let i = 0; i < roundBattles.length / 2; i++) {
         const oddBattle = roundBattles.find(
-          (b) => b.tournament_round_position === i * 2
+          (b) => b.tournament_round_position === i * 2,
         );
         const evenBattle = roundBattles.find(
-          (b) => b.tournament_round_position === i * 2 + 1
+          (b) => b.tournament_round_position === i * 2 + 1,
         );
 
         if (!oddBattle || !evenBattle) {

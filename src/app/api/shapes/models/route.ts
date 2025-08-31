@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db";
-import * as schema from "@/db/schema";
+import type * as schema from "@/db/schema";
 
 export async function GET() {
   try {
@@ -17,16 +17,17 @@ export async function GET() {
         chat_url: true,
       },
       // Drizzle type inference can be tricky here; cast callback args
-      orderBy: ((tbl: typeof schema.ai_model, utils: { asc: (c: any) => any }) => [
-        utils.asc(tbl.provider),
-        utils.asc(tbl.name),
-      ]) as any,
+      orderBy: ((
+        tbl: typeof schema.ai_model,
+        utils: { asc: (c: any) => any },
+      ) => [utils.asc(tbl.provider), utils.asc(tbl.name)]) as any,
     } as any);
 
     return NextResponse.json({ models: rows ?? [] });
-  } catch (e) {
-    return NextResponse.json({ error: "Failed to list models" }, { status: 500 });
+  } catch (_e) {
+    return NextResponse.json(
+      { error: "Failed to list models" },
+      { status: 500 },
+    );
   }
 }
-
-

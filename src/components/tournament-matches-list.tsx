@@ -1,9 +1,8 @@
 "use client";
 
 import Link from "next/link";
-
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { BattleSelect, PlayerSelect } from "@/db/schema";
 
 type MatchData = BattleSelect & {
@@ -72,14 +71,17 @@ export function MatchesList({
   }
 
   // Group matches by round for better organization
-  const matchesByRound = matches.reduce((acc, match) => {
-    const round = match.tournament_round || 0;
-    if (!acc[round]) {
-      acc[round] = [];
-    }
-    acc[round].push(match);
-    return acc;
-  }, {} as Record<number, MatchData[]>);
+  const matchesByRound = matches.reduce(
+    (acc, match) => {
+      const round = match.tournament_round || 0;
+      if (!acc[round]) {
+        acc[round] = [];
+      }
+      acc[round].push(match);
+      return acc;
+    },
+    {} as Record<number, MatchData[]>,
+  );
 
   const sortedRounds = Object.keys(matchesByRound)
     .map(Number)
@@ -116,7 +118,7 @@ export function MatchesList({
                 .sort(
                   (a, b) =>
                     (a.tournament_round_position || 0) -
-                    (b.tournament_round_position || 0)
+                    (b.tournament_round_position || 0),
                 )
                 .map((match) => {
                   const outcome = getOutcomeDisplay(match);

@@ -1,3 +1,6 @@
+/** biome-ignore-all lint/suspicious/noUnknownAtRules: tailwind */
+/** biome-ignore-all lint/complexity/noImportantStyles: tailwind */
+
 @import "tailwindcss";
 @import "tw-animate-css";
 
@@ -120,7 +123,7 @@
   }
   body {
     @apply bg-background text-foreground;
-    font-family: 'Courier New', monospace;
+    font-family: "Courier New", monospace;
   }
 }
 
@@ -143,7 +146,7 @@
 
   .terminal-text {
     color: var(--foreground);
-    font-family: 'Courier New', monospace;
+    font-family: "Courier New", monospace;
     text-shadow: 0 0 5px currentColor;
   }
 
@@ -151,7 +154,7 @@
     background: var(--primary);
     color: var(--primary-foreground);
     border: 1px solid var(--border);
-    font-family: 'Courier New', monospace;
+    font-family: "Courier New", monospace;
     text-shadow: 0 0 5px currentColor;
     transition: all 0.2s ease;
   }
@@ -165,7 +168,7 @@
     background: var(--input);
     border: 1px solid var(--border);
     color: var(--foreground);
-    font-family: 'Courier New', monospace;
+    font-family: "Courier New", monospace;
   }
 
   .terminal-input:focus {
@@ -174,7 +177,7 @@
   }
 
   .scanlines::before {
-    content: '';
+    content: "";
     position: absolute;
     top: 0;
     left: 0;
@@ -200,10 +203,19 @@
   }
 
   @keyframes flicker {
-    0%, 19%, 21%, 23%, 25%, 54%, 56%, 100% {
+    0%,
+    19%,
+    21%,
+    23%,
+    25%,
+    54%,
+    56%,
+    100% {
       opacity: 1;
     }
-    20%, 24%, 55% {
+    20%,
+    24%,
+    55% {
       opacity: 0.4;
     }
   }

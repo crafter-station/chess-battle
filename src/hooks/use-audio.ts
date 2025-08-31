@@ -40,7 +40,7 @@ export function useAudio() {
     env.gain.linearRampToValueAtTime(volume, ctx.currentTime + 0.005);
     env.gain.exponentialRampToValueAtTime(
       0.0001,
-      ctx.currentTime + durationMs / 1000
+      ctx.currentTime + durationMs / 1000,
     );
     osc.connect(env);
     env.connect(master);

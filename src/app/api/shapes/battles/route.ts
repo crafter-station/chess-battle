@@ -1,6 +1,6 @@
 import { ELECTRIC_PROTOCOL_QUERY_PARAMS } from "@electric-sql/client";
-import { getUser } from "@/lib/get-user";
 import { ELECTRIC_URL } from "@/lib/electric";
+import { getUser } from "@/lib/get-user";
 
 export async function GET(request: Request) {
   const url = new URL(request.url);

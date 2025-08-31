@@ -1,7 +1,7 @@
 import { schemaTask } from "@trigger.dev/sdk";
 import { generateObject, type ModelMessage } from "ai";
-import { z } from "zod";
 import { Chess } from "chess.js";
+import { z } from "zod";
 
 export const GetNextMoveTask = schemaTask({
   id: "get-next-move",
@@ -32,7 +32,7 @@ export const GetNextMoveTask = schemaTask({
           .string()
           .optional()
           .describe(
-            "Brief explanation: MAX 100 words OR 2 sentences (whichever is shorter). Keep it concise."
+            "Brief explanation: MAX 100 words OR 2 sentences (whichever is shorter). Keep it concise.",
           ),
         confidence: z
           .number()
@@ -41,7 +41,7 @@ export const GetNextMoveTask = schemaTask({
           .max(100)
           .optional()
           .describe(
-            "Integer confidence score 0-100 (how certain you are about this move)"
+            "Integer confidence score 0-100 (how certain you are about this move)",
           ),
       }),
       messages: constructMessages(chess, payload.lastInvalidMoves),
@@ -74,13 +74,13 @@ function constructMessages(chess: Chess, lastInvalidMoves: string[]) {
   const gameHistory = chess.history();
   const moveNumber = Math.floor(gameHistory.length / 2) + 1;
   const currentPlayer = chess.turn() === "w" ? "White" : "Black";
-  
+
   // Get additional game context
   const isCheck = chess.inCheck();
   const isCheckmate = chess.isCheckmate();
   const isStalemate = chess.isStalemate();
   const isDraw = chess.isDraw();
-  
+
   // Get last few moves for context
   const recentMoves = gameHistory.slice(-6).join(" ");
 

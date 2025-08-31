@@ -1,6 +1,6 @@
 import { eq } from "@tanstack/react-db";
-import { playersCollection, movesByBattleCollection } from "@/lib/collections";
 import type { MoveSelect, PlayerSelect } from "@/db/schema";
+import { movesByBattleCollection, playersCollection } from "@/lib/collections";
 
 export type MoveWithPlayer = Pick<
   MoveSelect,
@@ -26,10 +26,10 @@ export function buildMovesWithPlayersQuery(battleId: string) {
         ({ move, player }: { move: MoveSelect; player?: PlayerSelect }) =>
           eq(move.player_id, (player as PlayerSelect).id),
       )
-      .select(({ move, player }: { move: MoveSelect; player?: PlayerSelect }) => ({
-        ...move,
-        player_model_id: player?.model_id ?? null,
-      }));
+      .select(
+        ({ move, player }: { move: MoveSelect; player?: PlayerSelect }) => ({
+          ...move,
+          player_model_id: player?.model_id ?? null,
+        }),
+      );
 }
-
-

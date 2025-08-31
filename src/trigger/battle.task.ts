@@ -1,13 +1,11 @@
 import { logger, schemaTask } from "@trigger.dev/sdk";
-import { z } from "zod";
 import { Chess } from "chess.js";
-
+import { and, eq } from "drizzle-orm";
+import { z } from "zod";
 import { db } from "@/db";
 import * as schema from "@/db/schema";
 import { nanoid } from "@/lib/nanoid";
-
 import { GetNextMoveTask } from "./get-next-move.task";
-import { and, eq } from "drizzle-orm";
 
 export const BattleTask = schemaTask({
   id: "battle",
@@ -19,7 +17,7 @@ export const BattleTask = schemaTask({
     const battle = await db.query.battle.findFirst({
       where: and(
         eq(schema.battle.id, payload.battleId),
-        eq(schema.battle.user_id, payload.userId)
+        eq(schema.battle.user_id, payload.userId),
       ),
       with: {
         whitePlayer: true,
@@ -39,7 +37,7 @@ export const BattleTask = schemaTask({
     const chess = new Chess();
 
     logger.info(
-      `🏁 Starting chess battle: ${battle.whitePlayer.model_id} (White) vs ${battle.blackPlayer.model_id} (Black) (Battle ID: ${payload.battleId})`
+      `🏁 Starting chess battle: ${battle.whitePlayer.model_id} (White) vs ${battle.blackPlayer.model_id} (Black) (Battle ID: ${payload.battleId})`,
     );
 
     let lastInvalidMoves: string[] = [];
@@ -75,7 +73,7 @@ export const BattleTask = schemaTask({
           logger.info(
             `${currentPlayer} (${currentPlayerModelId}) (Move ${moveNumber}): ${
               nextMoveResult.output.move
-            } - Position: ${chess.fen().split(" ")[0]}`
+            } - Position: ${chess.fen().split(" ")[0]}`,
           );
         } catch (error) {
           isValid = false;
@@ -84,7 +82,7 @@ export const BattleTask = schemaTask({
             error.message.includes("Invalid move")
           ) {
             logger.error(
-              `${currentPlayer} (${currentPlayerModelId}) (Move ${moveNumber}): ❌ Invalid move "${nextMoveResult.output.move}" - ${error.message}. Retrying...`
+              `${currentPlayer} (${currentPlayerModelId}) (Move ${moveNumber}): ❌ Invalid move "${nextMoveResult.output.move}" - ${error.message}. Retrying...`,
             );
           } else {
             throw error;
@@ -92,7 +90,7 @@ export const BattleTask = schemaTask({
         }
       } else {
         logger.error(
-          `${currentPlayer} (${currentPlayerModelId}) (Move ${moveNumber}): ❌ No move returned.`
+          `${currentPlayer} (${currentPlayerModelId}) (Move ${moveNumber}): ❌ No move returned.`,
         );
         isValid = false;
       }
@@ -115,8 +113,8 @@ export const BattleTask = schemaTask({
       if (lastInvalidMoves.length > 2) {
         logger.warn(
           `🤖 ${currentPlayer} (${currentPlayerModelId}) Too many invalid moves: ${lastInvalidMoves.join(
-            ", "
-          )}. Let's make a move ourselves.`
+            ", ",
+          )}. Let's make a move ourselves.`,
         );
         const randomMove =
           chess.moves()[Math.floor(Math.random() * chess.moves().length)];
@@ -124,7 +122,7 @@ export const BattleTask = schemaTask({
         logger.info(
           `🤖 ${currentPlayer} (${currentPlayerModelId}) Random move: ${randomMove} - Position: ${
             chess.fen().split(" ")[0]
-          }`
+          }`,
         );
         isValid = true;
         lastInvalidMoves = [];
@@ -188,7 +186,7 @@ export const BattleTask = schemaTask({
         winner === battle.white_player_id
           ? `White (${battle.whitePlayer.model_id})`
           : `Black (${battle.blackPlayer.model_id})`
-      } won`
+      } won`,
     );
 
     return {

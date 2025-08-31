@@ -1,6 +1,6 @@
 "use client";
-import { useEffect } from "react";
 import { useAuth } from "@clerk/nextjs";
+import { useEffect } from "react";
 
 export default function MergeOnSignin() {
   const { isSignedIn } = useAuth();
@@ -17,5 +17,3 @@ export default function MergeOnSignin() {
 
   return null;
 }
-
-

@@ -1,12 +1,12 @@
 "use server";
 
+import { auth } from "@clerk/nextjs/server";
+import { cookies } from "next/headers";
 import { db } from "@/db";
 import * as schema from "@/db/schema";
 import { getUser } from "@/lib/get-user";
 import { nanoid } from "@/lib/nanoid";
 import { BattleTask } from "@/trigger/battle.task";
-import { auth } from "@clerk/nextjs/server";
-import { cookies } from "next/headers";
 
 export type StartBattleActionState = {
   input: {
@@ -28,7 +28,7 @@ export type StartBattleActionState = {
 
 export async function StartBattleAction(
   _prevState: StartBattleActionState,
-  formData: FormData
+  formData: FormData,
 ): Promise<StartBattleActionState> {
   const input: StartBattleActionState["input"] = {
     whitePlayerModelId: formData.get("whitePlayerModelId")?.toString(),

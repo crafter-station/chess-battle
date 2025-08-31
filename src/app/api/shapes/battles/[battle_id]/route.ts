@@ -1,18 +1,16 @@
 import { ELECTRIC_PROTOCOL_QUERY_PARAMS } from "@electric-sql/client";
-import { getUser } from "@/lib/get-user";
 import { ELECTRIC_URL } from "@/lib/electric";
+import { getUser } from "@/lib/get-user";
 
 export async function GET(
   request: Request,
-  { params }: { params: Promise<{ battle_id: string }> }
+  { params }: { params: Promise<{ battle_id: string }> },
 ) {
   const url = new URL(request.url);
   const { battle_id } = await params;
 
   // Construct the upstream URL
-  const originUrl = new URL(
-    ELECTRIC_URL
-  );
+  const originUrl = new URL(ELECTRIC_URL);
 
   // Only pass through Electric protocol parameters
   url.searchParams.forEach((value, key) => {
@@ -33,7 +31,7 @@ export async function GET(
   // Filter data by user ID - each user can only see their own battles
   originUrl.searchParams.set(
     `where`,
-    `"user_id" = '${userId}' AND "id" = '${battle_id}'`
+    `"user_id" = '${userId}' AND "id" = '${battle_id}'`,
   );
 
   const response = await fetch(originUrl);

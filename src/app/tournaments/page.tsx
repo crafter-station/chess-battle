@@ -1,13 +1,16 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useActionState } from "react";
 import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { ModelSelect, type ModelOption } from "@/components/model-select";
+import { useActionState, useEffect, useState } from "react";
+import {
+  StartTournamentAction,
+  type StartTournamentActionState,
+  type TournamentMatch,
+} from "@/actions/start-tournament.action";
+import { type ModelOption, ModelSelect } from "@/components/model-select";
 import { Navbar } from "@/components/navbar";
+import { Button } from "@/components/ui/button";
 import { MODELS } from "@/lib/models";
-import { StartTournamentAction, type StartTournamentActionState, type TournamentMatch } from "@/actions/start-tournament.action";
 
 type TournamentSize = 4 | 8 | 16 | 32;
 
@@ -40,7 +43,7 @@ export default function TournamentsPage() {
   const [brackets, setBrackets] = useState<BracketPosition[]>([]);
   const [selectedPosition, setSelectedPosition] = useState<string | null>(null);
   const [selectedSide, setSelectedSide] = useState<"white" | "black" | null>(
-    null
+    null,
   );
 
   // Initialize tournament action state
@@ -48,10 +51,10 @@ export default function TournamentsPage() {
     input: {},
     output: { success: false },
   };
-  
+
   const [actionState, formAction, isPending] = useActionState(
     StartTournamentAction,
-    initialState
+    initialState,
   );
 
   // Handle successful tournament creation
@@ -128,8 +131,8 @@ export default function TournamentsPage() {
               [selectedSide === "white" ? "whitePlayer" : "blackPlayer"]:
                 newPlayer,
             }
-          : bracket
-      )
+          : bracket,
+      ),
     );
     setSelectedPosition(null);
     setSelectedSide(null);
@@ -143,7 +146,7 @@ export default function TournamentsPage() {
     });
 
     const availableModels = mockModelOptions.filter(
-      (model) => !usedModels.has(model.canonical_id)
+      (model) => !usedModels.has(model.canonical_id),
     );
 
     if (availableModels.length < 2) return;
@@ -170,15 +173,15 @@ export default function TournamentsPage() {
       prev.map((bracket) =>
         bracket.round === round && bracket.position === position
           ? { ...bracket, whitePlayer, blackPlayer }
-          : bracket
-      )
+          : bracket,
+      ),
     );
   };
 
   const handlePopulateRandom = () => {
     const firstRoundPositions = brackets.filter((b) => b.round === 0);
     const emptyPositions = firstRoundPositions.filter(
-      (b) => !b.whitePlayer || !b.blackPlayer
+      (b) => !b.whitePlayer || !b.blackPlayer,
     );
 
     const usedModels = new Set<string>();
@@ -188,7 +191,7 @@ export default function TournamentsPage() {
     });
 
     const availableModels = mockModelOptions.filter(
-      (model) => !usedModels.has(model.canonical_id)
+      (model) => !usedModels.has(model.canonical_id),
     );
     const shuffledModels = [...availableModels].sort(() => Math.random() - 0.5);
 
@@ -198,7 +201,7 @@ export default function TournamentsPage() {
 
       emptyPositions.forEach((emptyPos) => {
         const bracketIndex = updated.findIndex(
-          (b) => b.round === emptyPos.round && b.position === emptyPos.position
+          (b) => b.round === emptyPos.round && b.position === emptyPos.position,
         );
 
         if (bracketIndex !== -1 && modelIndex < shuffledModels.length - 1) {
@@ -232,7 +235,7 @@ export default function TournamentsPage() {
   const handleShuffleAll = () => {
     const firstRoundPositions = brackets.filter((b) => b.round === 0);
     const availableModels = [...mockModelOptions].sort(
-      () => Math.random() - 0.5
+      () => Math.random() - 0.5,
     );
 
     setBrackets((prev) => {
@@ -241,7 +244,7 @@ export default function TournamentsPage() {
 
       firstRoundPositions.forEach((pos) => {
         const bracketIndex = updated.findIndex(
-          (b) => b.round === pos.round && b.position === pos.position
+          (b) => b.round === pos.round && b.position === pos.position,
         );
 
         if (bracketIndex !== -1 && modelIndex < availableModels.length - 1) {
@@ -452,7 +455,7 @@ export default function TournamentsPage() {
             {tournamentSize} Players • {rounds} Rounds •{" "}
             {
               brackets.filter(
-                (b) => b.round === 0 && b.whitePlayer && b.blackPlayer
+                (b) => b.round === 0 && b.whitePlayer && b.blackPlayer,
               ).length
             }
             /{brackets.filter((b) => b.round === 0).length} Matches Complete
@@ -471,7 +474,7 @@ export default function TournamentsPage() {
   return (
     <div className="min-h-screen terminal-card crt-flicker">
       <Navbar />
-      
+
       {/* Header */}
       <div className="max-w-6xl mx-auto px-6 py-8">
         <div className="text-center">
@@ -483,7 +486,9 @@ export default function TournamentsPage() {
           <h1 className="terminal-text terminal-glow text-4xl font-mono mb-2">
             CHESS BATTLE
           </h1>
-          <h2 className="terminal-text text-2xl font-mono mb-4">AI TOURNAMENT</h2>
+          <h2 className="terminal-text text-2xl font-mono mb-4">
+            AI TOURNAMENT
+          </h2>
           <p className="terminal-text opacity-80">
             Select your AI warriors for the ultimate chess battle
           </p>
@@ -512,9 +517,7 @@ export default function TournamentsPage() {
 
       {/* Tournament Bracket */}
       <div className="max-w-6xl mx-auto px-6 mb-8">
-        <div className="terminal-card terminal-border">
-          {renderBracket()}
-        </div>
+        <div className="terminal-card terminal-border">{renderBracket()}</div>
       </div>
 
       {/* Controls */}
@@ -540,7 +543,7 @@ export default function TournamentsPage() {
                   ...b,
                   whitePlayer: undefined,
                   blackPlayer: undefined,
-                }))
+                })),
               )
             }
           >
@@ -560,9 +563,21 @@ export default function TournamentsPage() {
                 const tournamentData = getTournamentData();
                 return (
                   <>
-                    <input type="hidden" name="tournamentName" value={tournamentData.tournamentName} />
-                    <input type="hidden" name="tournamentSize" value={tournamentData.tournamentSize} />
-                    <input type="hidden" name="matches" value={tournamentData.matches} />
+                    <input
+                      type="hidden"
+                      name="tournamentName"
+                      value={tournamentData.tournamentName}
+                    />
+                    <input
+                      type="hidden"
+                      name="tournamentSize"
+                      value={tournamentData.tournamentSize}
+                    />
+                    <input
+                      type="hidden"
+                      name="matches"
+                      value={tournamentData.matches}
+                    />
                   </>
                 );
               })()}
@@ -613,8 +628,8 @@ export default function TournamentsPage() {
                   !brackets.some(
                     (bracket) =>
                       bracket.whitePlayer?.modelId === model.canonical_id ||
-                      bracket.blackPlayer?.modelId === model.canonical_id
-                  )
+                      bracket.blackPlayer?.modelId === model.canonical_id,
+                  ),
               )}
               value=""
               onChange={handlePlayerSelect}

@@ -1,19 +1,18 @@
 "use client";
 
-import { useLiveQuery, eq } from "@tanstack/react-db";
-import { useParams } from "next/navigation";
+import { eq, useLiveQuery } from "@tanstack/react-db";
 import Link from "next/link";
-
+import { useParams } from "next/navigation";
+import React from "react";
+import { Navbar } from "@/components/navbar";
+import { MatchesList } from "@/components/tournament-matches-list";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   BattlesCollection,
   PlayersCollection,
   TournamentsCollection,
 } from "@/db/electric";
-import { MatchesList } from "@/components/tournament-matches-list";
-import { Navbar } from "@/components/navbar";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import React from "react";
 
 export default function TournamentPage() {
   const { tournament_id } = useParams<{ tournament_id: string }>();
@@ -21,7 +20,7 @@ export default function TournamentPage() {
   const { data: tournament } = useLiveQuery((q) =>
     q
       .from({ tournament: TournamentsCollection })
-      .where(({ tournament }) => eq(tournament.id, tournament_id))
+      .where(({ tournament }) => eq(tournament.id, tournament_id)),
   );
 
   const { data: battles } = useLiveQuery((q) =>
@@ -30,19 +29,19 @@ export default function TournamentPage() {
       .leftJoin(
         { white_player: PlayersCollection },
         ({ battle, white_player }) =>
-          eq(battle.white_player_id, white_player.id)
+          eq(battle.white_player_id, white_player.id),
       )
       .leftJoin(
         { black_player: PlayersCollection },
         ({ battle, black_player }) =>
-          eq(battle.black_player_id, black_player.id)
+          eq(battle.black_player_id, black_player.id),
       )
       .where(({ battle }) => eq(battle.tournament_id, tournament_id))
       .select(({ battle, white_player, black_player }) => ({
         ...battle,
         white_player,
         black_player,
-      }))
+      })),
   );
 
   React.useEffect(() => {
@@ -69,7 +68,7 @@ export default function TournamentPage() {
   return (
     <div className="min-h-screen terminal-card crt-flicker">
       <Navbar />
-      
+
       {/* Tournament Header */}
       <div className="max-w-6xl mx-auto px-6 py-8">
         <Card className="terminal-card terminal-border">
@@ -135,12 +134,18 @@ export default function TournamentPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <Link href="/">
-                <Button className="w-full terminal-text font-mono border-terminal-accent text-terminal-accent hover:bg-terminal-accent/10" variant="outline">
+                <Button
+                  className="w-full terminal-text font-mono border-terminal-accent text-terminal-accent hover:bg-terminal-accent/10"
+                  variant="outline"
+                >
                   ← Back to Home
                 </Button>
               </Link>
               <Link href="/tournaments">
-                <Button className="w-full terminal-text font-mono border-terminal-accent text-terminal-accent hover:bg-terminal-accent/10" variant="outline">
+                <Button
+                  className="w-full terminal-text font-mono border-terminal-accent text-terminal-accent hover:bg-terminal-accent/10"
+                  variant="outline"
+                >
                   ← Back to Tournaments
                 </Button>
               </Link>

@@ -1,10 +1,10 @@
 import { ELECTRIC_PROTOCOL_QUERY_PARAMS } from "@electric-sql/client";
-import { getUser } from "@/lib/get-user";
 import { ELECTRIC_URL } from "@/lib/electric";
+import { getUser } from "@/lib/get-user";
 
 export async function GET(
   request: Request,
-  { params }: { params: Promise<{ player_id: string }> }
+  { params }: { params: Promise<{ player_id: string }> },
 ) {
   const url = new URL(request.url);
   const { player_id } = await params;
@@ -31,7 +31,7 @@ export async function GET(
   // Filter data by user ID - each user can only see their own battles
   originUrl.searchParams.set(
     `where`,
-    `"user_id" = '${userId}' AND "id" = '${player_id}'`
+    `"user_id" = '${userId}' AND "id" = '${player_id}'`,
   );
 
   const response = await fetch(originUrl);

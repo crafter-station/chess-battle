@@ -2,8 +2,8 @@ import { logger, schemaTask, task, wait } from "@trigger.dev/sdk";
 import { z } from "zod";
 import { db } from "@/db";
 import * as schema from "@/db/schema";
-import { nanoid } from "@/lib/nanoid";
 import { MODELS } from "@/lib/models";
+import { nanoid } from "@/lib/nanoid";
 
 type MinimalModelExtract = {
   name?: string;
@@ -116,7 +116,7 @@ export const SyncAIGatewayModelsTask = task({
           {
             canonical,
             error: detailsResult.error,
-          }
+          },
         );
       }
 
@@ -124,8 +124,8 @@ export const SyncAIGatewayModelsTask = task({
       const name = enriched?.name ?? slug.replace(/-/g, " ");
       const description = enriched?.description ?? null;
       const logoUrl =
-        Array.isArray(enriched?.logos) && enriched!.logos!.length > 0
-          ? enriched!.logos![0]
+        Array.isArray(enriched?.logos) && enriched?.logos?.length > 0
+          ? enriched?.logos?.[0]
           : null;
       const chatUrl = enriched?.chat_url ?? null;
 

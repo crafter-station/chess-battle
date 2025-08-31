@@ -1,18 +1,18 @@
 "use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Navbar } from "@/components/navbar";
-import BattleSetup from "./battle-setup";
-import { formatDate } from "@/lib/utils";
-import Link from "next/link";
 import { eq, useLiveQuery } from "@tanstack/react-db";
+import Link from "next/link";
+import { useEffect, useState } from "react";
+import { Navbar } from "@/components/navbar";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   BattlesCollection,
   PlayersCollection,
   TournamentsCollection,
 } from "@/db/electric";
-import { useEffect, useState } from "react";
+import { formatDate } from "@/lib/utils";
+import BattleSetup from "./battle-setup";
 
 // Client-only content component
 function ClientContent() {
@@ -24,25 +24,25 @@ function ClientContent() {
       .leftJoin(
         { white_player: PlayersCollection },
         ({ battle, white_player }) =>
-          eq(battle.white_player_id, white_player.id)
+          eq(battle.white_player_id, white_player.id),
       )
       .leftJoin(
         { black_player: PlayersCollection },
         ({ battle, black_player }) =>
-          eq(battle.black_player_id, black_player.id)
+          eq(battle.black_player_id, black_player.id),
       )
       .orderBy(({ battle }) => battle.created_at, "desc")
       .select(({ battle, white_player, black_player }) => ({
         ...battle,
         white_player,
         black_player,
-      }))
+      })),
   );
 
   const { data: tournaments } = useLiveQuery((q) =>
     q
       .from({ tournament: TournamentsCollection })
-      .orderBy(({ tournament }) => tournament.created_at, "desc")
+      .orderBy(({ tournament }) => tournament.created_at, "desc"),
   );
 
   return (

@@ -65,8 +65,8 @@ export function MoveInfo() {
                 moveIndex === 0
                   ? "secondary"
                   : currentMove?.is_valid
-                  ? "default"
-                  : "destructive"
+                    ? "default"
+                    : "destructive"
               }
               className="terminal-text !text-primary-foreground"
             >
@@ -80,15 +80,15 @@ export function MoveInfo() {
                 moveIndex === -1
                   ? "text-foreground"
                   : currentMove?.is_valid
-                  ? "text-green-400"
-                  : "text-red-400"
+                    ? "text-green-400"
+                    : "text-red-400"
               }`}
             >
               {moveIndex === -1
                 ? "READY"
                 : currentMove?.is_valid
-                ? "VALID"
-                : "INVALID"}
+                  ? "VALID"
+                  : "INVALID"}
             </span>
           </div>
           <div className="flex justify-between">

@@ -1,0 +1,13 @@
+# Get staged files
+STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACMR | grep -E '\.(jsx?|tsx?|json|css)$' | xargs)
+
+# Only run biome if there are staged files
+if [ -n "$STAGED_FILES" ]; then
+  echo "Running biome check on staged files..."
+  bun run check $STAGED_FILES
+  # Stage only the files that were checked
+  echo "Re-staging only checked files..."
+  git add $STAGED_FILES
+else
+  echo "No staged files to check with biome."
+fi

@@ -54,7 +54,7 @@ export default function BattleSetup() {
   });
 
   const optimisticStart = React.useMemo(
-    () => createStartBattleOptimistic(action),
+    () => createStartBattleOptimistic(action as any),
     [action],
   );
 

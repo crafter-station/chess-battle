@@ -105,6 +105,15 @@ export const BattleTask = schemaTask({
           `Move ${moveNumber}: ${currentPlayer} (${currentPlayerModelId}) to play`,
         );
 
+        let isValid = true;
+        let moveAttempt = null;
+        let reasoning = null;
+        let tokens_in = null;
+        let tokens_out = null;
+        let response_time = null;
+        let confidence = null;
+        let raw_response = null;
+
         // Generate next move with timeout handling
         const nextMoveResult = await GetNextMoveTask.triggerAndWait(
           {
@@ -122,41 +131,23 @@ export const BattleTask = schemaTask({
             nextMoveResult.error instanceof Error &&
             nextMoveResult.error.message.includes("maxDuration")
           ) {
-            await db.insert(schema.move).values({
-              id: nanoid(),
-              battle_id: payload.battleId,
-              user_id: payload.userId,
-              player_id: playerId,
-              move: null,
-              state: chess.fen(),
-              is_valid: false,
-              tokens_in: null,
-              tokens_out: null,
-              response_time: CONFIG.MAX_MOVE_GENERATION_TIME * 1000,
-              confidence: null,
-              reasoning: "Move generation timed out",
-            });
-
-            lastInvalidMoves.push("");
-
-            // Track invalid moves per player
-            if (chess.turn() === "w") {
-              whiteInvalidMoves++;
-            } else {
-              blackInvalidMoves++;
-            }
-
-            continue;
+            isValid = false;
+            reasoning = "Move generation timed out";
           } else {
             throw new BattleError(
               `Failed to get next move for ${currentPlayer}: ${nextMoveResult.error}`,
               "MOVE_GENERATION_FAILED",
             );
           }
+        } else {
+          moveAttempt = nextMoveResult.output.move;
+          reasoning = nextMoveResult.output.reasoning;
+          tokens_in = nextMoveResult.output.tokensIn;
+          tokens_out = nextMoveResult.output.tokensOut;
+          response_time = nextMoveResult.output.responseTime;
+          confidence = nextMoveResult.output.confidence;
+          raw_response = nextMoveResult.output.rawResponse;
         }
-
-        let isValid = true;
-        const moveAttempt = nextMoveResult.output.move;
 
         // Validate and apply the move
         if (moveAttempt) {
@@ -198,15 +189,15 @@ export const BattleTask = schemaTask({
           battle_id: payload.battleId,
           user_id: payload.userId,
           player_id: playerId,
-          move: moveAttempt ?? null,
+          move: moveAttempt,
           state: chess.fen(),
           is_valid: isValid,
-          tokens_in: nextMoveResult.output.tokensIn,
-          tokens_out: nextMoveResult.output.tokensOut,
-          response_time: nextMoveResult.output.responseTime,
-          confidence: nextMoveResult.output.confidence,
-          reasoning: nextMoveResult.output.reasoning,
-          raw_response: isValid ? null : nextMoveResult.output.rawResponse,
+          tokens_in,
+          tokens_out,
+          response_time,
+          confidence,
+          reasoning,
+          raw_response: isValid ? null : raw_response,
         });
 
         // Update invalid move tracking

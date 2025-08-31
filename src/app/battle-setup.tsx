@@ -1,6 +1,7 @@
 "use client";
 
 import { SignedOut, SignInButton } from "@clerk/nextjs";
+import { useLiveQuery } from "@tanstack/react-db";
 import { useRouter } from "next/navigation";
 import * as React from "react";
 
@@ -10,40 +11,20 @@ import { ModelSelect } from "@/components/model-select";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
+import { AIModelsCollection } from "@/db/electric";
+
 import { MODELS } from "@/lib/models";
-import { nanoid } from "@/lib/nanoid";
-import { createStartBattleOptimistic } from "@/lib/optimistic-actions";
 
 export default function BattleSetup() {
   const router = useRouter();
   const [whiteModel, setWhiteModel] = React.useState<string>("");
   const [blackModel, setBlackModel] = React.useState<string>("");
-  const [catalog, setCatalog] = React.useState<
-    Array<{
-      canonical_id: string;
-      name: string | null;
-      description: string | null;
-      logo_url: string | null;
-    }>
-  >([]);
 
-  React.useEffect(() => {
-    // Fetch models from our catalog API; fallback to static MODELS if empty
-    fetch("/api/shapes/models")
-      .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
-      .then((data) => {
-        const list = (data?.models ?? []) as any[];
-        setCatalog(
-          list.map((m) => ({
-            canonical_id: m.canonical_id,
-            name: m.name ?? null,
-            description: m.description ?? null,
-            logo_url: m.logo_url ?? null,
-          })),
-        );
-      })
-      .catch(() => setCatalog([]));
-  }, []);
+  const { data: models } = useLiveQuery((q) =>
+    q.from({ model: AIModelsCollection }).select(({ model }) => ({
+      ...model,
+    })),
+  );
 
   const [state, action, isPending] = React.useActionState(StartBattleAction, {
     input: {},
@@ -52,11 +33,6 @@ export default function BattleSetup() {
       error: "",
     },
   });
-
-  const optimisticStart = React.useMemo(
-    () => createStartBattleOptimistic(action as any),
-    [action],
-  );
 
   React.useEffect(() => {
     if (state.output.success && "data" in state.output) {
@@ -96,14 +72,14 @@ export default function BattleSetup() {
           <ModelSelect
             label="♔ WHITE PLAYER MODEL"
             items={
-              (catalog.length > 0
-                ? catalog
+              models.length > 0
+                ? models
                 : MODELS.map((m) => ({
                     canonical_id: m,
                     name: m,
                     description: null,
                     logo_url: null,
-                  }))) as any
+                  }))
             }
             value={whiteModel}
             onChange={setWhiteModel}
@@ -114,33 +90,21 @@ export default function BattleSetup() {
           <ModelSelect
             label="♛ BLACK PLAYER MODEL"
             items={
-              (catalog.length > 0
-                ? catalog
+              models.length > 0
+                ? models
                 : MODELS.map((m) => ({
                     canonical_id: m,
                     name: m,
                     description: null,
                     logo_url: null,
-                  }))) as any
+                  }))
             }
             value={blackModel}
             onChange={setBlackModel}
             placeholder="Select model for Black player"
           />
 
-          <form
-            action={async (_formData) => {
-              if (!whiteModel || !blackModel) return;
-              const id = nanoid();
-              optimisticStart({
-                whitePlayerModelId: whiteModel,
-                blackPlayerModelId: blackModel,
-                battleId: id,
-              });
-              // Do NOT also call action(formData) here; optimisticStart triggers it in mutationFn
-              router.push(`/battles/${id}`);
-            }}
-          >
+          <form action={action}>
             <input type="hidden" name="whitePlayerModelId" value={whiteModel} />
             <input type="hidden" name="blackPlayerModelId" value={blackModel} />
             <Button

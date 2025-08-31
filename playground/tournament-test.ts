@@ -4,7 +4,7 @@ import type { Model } from "@/lib/models";
 import { nanoid } from "@/lib/nanoid";
 import { TournamentTask } from "@/trigger/tournament.task";
 
-const userId = "user_123";
+        const userId = "user_123";
 
 const tournamentId = nanoid();
 await db.insert(schema.tournament).values({

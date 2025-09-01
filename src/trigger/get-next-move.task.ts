@@ -53,10 +53,11 @@ export const GetNextMoveTask = schemaTask({
       },
     });
 
+    const responseTime = Date.now() - initialTime;
+
     const move = generateMoveResult.object.move ?? null;
     const tokensIn = generateMoveResult.usage?.inputTokens ?? null;
     const tokensOut = generateMoveResult.usage?.outputTokens ?? null;
-    const responseTime = Date.now() - initialTime;
 
     let rawResponse = null;
 

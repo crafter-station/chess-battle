@@ -136,6 +136,7 @@ export const BattleTask = schemaTask({
           ) {
             isValid = false;
             reasoning = "Move generation timed out";
+            response_time = CONFIG.MAX_MOVE_GENERATION_TIME * 1000;
           } else {
             throw new BattleError(
               `Failed to get next move for ${currentPlayer}: ${nextMoveResult.error}`,

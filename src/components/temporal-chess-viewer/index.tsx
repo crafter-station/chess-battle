@@ -17,6 +17,7 @@ import { MoveHistory } from "@/components/temporal-chess-viewer/move-history";
 import { MoveInfo } from "@/components/temporal-chess-viewer/move-info";
 import { NavigationControls } from "@/components/temporal-chess-viewer/navigation-controls";
 import { PlayerCard } from "@/components/temporal-chess-viewer/player-card";
+import { BattleTimeout } from "@/components/temporal-chess-viewer/timeout";
 
 import { useCurrentMove } from "@/hooks/use-current-move";
 import { useMoves } from "@/hooks/use-moves";
@@ -24,25 +25,27 @@ import { useMoves } from "@/hooks/use-moves";
 export function TemporalChessViewer() {
   const { battle_id } = useParams<{ battle_id: string }>();
 
-  const { data: battleData } = useLiveQuery((q) =>
-    q
-      .from({ battle: BattlesCollection })
-      .leftJoin(
-        { white_player: PlayersCollection },
-        ({ battle, white_player }) =>
-          eq(battle.white_player_id, white_player.id),
-      )
-      .leftJoin(
-        { black_player: PlayersCollection },
-        ({ battle, black_player }) =>
-          eq(battle.black_player_id, black_player.id),
-      )
-      .where(({ battle }) => eq(battle.id, battle_id))
-      .select(({ battle, white_player, black_player }) => ({
-        ...battle,
-        white_player,
-        black_player,
-      })),
+  const { data: battleData } = useLiveQuery(
+    (q) =>
+      q
+        .from({ battle: BattlesCollection })
+        .leftJoin(
+          { white_player: PlayersCollection },
+          ({ battle, white_player }) =>
+            eq(battle.white_player_id, white_player.id),
+        )
+        .leftJoin(
+          { black_player: PlayersCollection },
+          ({ battle, black_player }) =>
+            eq(battle.black_player_id, black_player.id),
+        )
+        .where(({ battle }) => eq(battle.id, battle_id))
+        .select(({ battle, white_player, black_player }) => ({
+          ...battle,
+          white_player,
+          black_player,
+        })),
+    [battle_id],
   );
 
   const currentMove = useCurrentMove();
@@ -101,6 +104,7 @@ export function TemporalChessViewer() {
               }}
               moves={moves}
             />
+            <BattleTimeout />
 
             {/* Game Result - Only shown when game is over */}
             <GameResult

@@ -28,28 +28,32 @@ export function PlayerCard({
   const { battle_id } = useParams<{ battle_id: string }>();
   const {
     data: [player],
-  } = useLiveQuery((q) =>
-    q
-      .from({
-        player: PlayersCollection,
-      })
-      .leftJoin({ model: AIModelsCollection }, ({ player, model }) =>
-        eq(player.model_id, model.canonical_id),
-      )
-      .where(({ player }) => eq(player.id, playerId))
-      .select(({ model, player }) => ({
-        ...player,
-        model,
-      })),
+  } = useLiveQuery(
+    (q) =>
+      q
+        .from({
+          player: PlayersCollection,
+        })
+        .leftJoin({ model: AIModelsCollection }, ({ player, model }) =>
+          eq(player.model_id, model.canonical_id),
+        )
+        .where(({ player }) => eq(player.id, playerId))
+        .select(({ model, player }) => ({
+          ...player,
+          model,
+        })),
+    [playerId],
   );
 
-  const { data: moves } = useLiveQuery((q) =>
-    q
-      .from({
-        move: MovesCollection,
-      })
-      .where(({ move }) => eq(move.player_id, playerId))
-      .where(({ move }) => eq(move.battle_id, battle_id)),
+  const { data: moves } = useLiveQuery(
+    (q) =>
+      q
+        .from({
+          move: MovesCollection,
+        })
+        .where(({ move }) => eq(move.player_id, playerId))
+        .where(({ move }) => eq(move.battle_id, battle_id)),
+    [playerId, battle_id],
   );
 
   const totalMoves = React.useMemo(() => {

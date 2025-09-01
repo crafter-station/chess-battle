@@ -21,6 +21,8 @@ export const battle = pgTable("battle", {
   tournament_round: integer("tournament_round"),
   tournament_round_position: integer("tournament_round_position"),
 
+  timeout_ms: integer("timeout_ms").notNull().default(30000),
+
   white_player_id: text("white_player_id")
     .notNull()
     .references(() => player.id),

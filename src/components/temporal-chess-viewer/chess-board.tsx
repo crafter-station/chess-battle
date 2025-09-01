@@ -19,25 +19,27 @@ export function ChessBoard() {
   const { battle_id } = useParams<{ battle_id: string }>();
   const {
     data: [battle],
-  } = useLiveQuery((q) =>
-    q
-      .from({ battle: BattlesCollection })
-      .leftJoin(
-        { white_player: PlayersCollection },
-        ({ battle, white_player }) =>
-          eq(battle.white_player_id, white_player.id),
-      )
-      .leftJoin(
-        { black_player: PlayersCollection },
-        ({ battle, black_player }) =>
-          eq(battle.black_player_id, black_player.id),
-      )
-      .where(({ battle }) => eq(battle.id, battle_id))
-      .select(({ battle, white_player, black_player }) => ({
-        ...battle,
-        white_player,
-        black_player,
-      })),
+  } = useLiveQuery(
+    (q) =>
+      q
+        .from({ battle: BattlesCollection })
+        .leftJoin(
+          { white_player: PlayersCollection },
+          ({ battle, white_player }) =>
+            eq(battle.white_player_id, white_player.id),
+        )
+        .leftJoin(
+          { black_player: PlayersCollection },
+          ({ battle, black_player }) =>
+            eq(battle.black_player_id, black_player.id),
+        )
+        .where(({ battle }) => eq(battle.id, battle_id))
+        .select(({ battle, white_player, black_player }) => ({
+          ...battle,
+          white_player,
+          black_player,
+        })),
+    [battle_id],
   );
 
   // Create game over info from battle properties

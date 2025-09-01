@@ -1,5 +1,6 @@
 import { electricCollectionOptions } from "@tanstack/electric-db-collection";
 import { createCollection } from "@tanstack/react-db";
+import { toast } from "sonner";
 
 import type {
   AIModelSelect,
@@ -18,6 +19,37 @@ export const BattlesCollection = createCollection<
       url: `${process.env.NEXT_PUBLIC_URL}/api/electric/battles`,
     },
     getKey: (item) => item.id,
+    onUpdate: async ({ transaction }) => {
+      const newItem = transaction.mutations[0].modified;
+
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_URL}/api/electric/battles/${newItem.id}`,
+        {
+          method: "PUT",
+          body: JSON.stringify({
+            timeout_ms: newItem.timeout_ms,
+          }),
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to update battle timeout");
+      }
+      const data = (await response.json()) as {
+        success: boolean;
+        txid: number;
+      };
+
+      if (!data.success) {
+        throw new Error("Failed to update battle timeout");
+      }
+
+      toast.success("Battle timeout updated");
+
+      return {
+        txid: data.txid,
+      };
+    },
   }),
 );
 

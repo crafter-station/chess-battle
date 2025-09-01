@@ -14,11 +14,13 @@ interface ModelInfoProps {
 }
 
 export function ModelInfo({ modelId, className = "" }: ModelInfoProps) {
-  const { data: model } = useLiveQuery((q) =>
-    q
-      .from({ model: AIModelsCollection })
-      .where(({ model }) => eq(model.canonical_id, modelId))
-      .select(({ model }) => ({ ...model })),
+  const { data: model } = useLiveQuery(
+    (q) =>
+      q
+        .from({ model: AIModelsCollection })
+        .where(({ model }) => eq(model.canonical_id, modelId))
+        .select(({ model }) => ({ ...model })),
+    [modelId],
   );
 
   const modelData = model?.[0];

@@ -26,17 +26,21 @@ export function TournamentPageClient({
     setMounted(true);
   }, []);
 
-  const { data: tournament, isLoading: tournamentLoading } = useLiveQuery((q) =>
-    q
-      .from({ tournament: TournamentsCollection })
-      .where(({ tournament }) => eq(tournament.id, tournamentId)),
+  const { data: tournament, isLoading: tournamentLoading } = useLiveQuery(
+    (q) =>
+      q
+        .from({ tournament: TournamentsCollection })
+        .where(({ tournament }) => eq(tournament.id, tournamentId)),
+    [tournamentId],
   );
 
-  const { data: battles } = useLiveQuery((q) =>
-    q
-      .from({ battle: BattlesCollection })
-      .where(({ battle }) => eq(battle.tournament_id, tournamentId))
-      .select(({ battle }) => ({ ...battle })),
+  const { data: battles } = useLiveQuery(
+    (q) =>
+      q
+        .from({ battle: BattlesCollection })
+        .where(({ battle }) => eq(battle.tournament_id, tournamentId))
+        .select(({ battle }) => ({ ...battle })),
+    [tournamentId],
   );
 
   // Show loading state until mounted and data loaded

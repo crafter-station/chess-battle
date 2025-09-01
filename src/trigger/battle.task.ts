@@ -16,7 +16,6 @@ const CONFIG = {
   MAX_INVALID_MOVES: 2, // Consecutive invalid moves before random fallback
   MAX_INVALID_MOVES_PER_PLAYER: 10, // Total invalid moves per player before forfeit
   MAX_GAME_MOVES: 100, // Prevent infinite games
-  MAX_MOVE_GENERATION_TIME: 30, // Max time to generate a move
 } as const;
 
 /**
@@ -117,6 +116,17 @@ export const BattleTask = schemaTask({
         let confidence = null;
         let raw_response = null;
 
+        const battleTimeout = await db.query.battle.findFirst({
+          where: eq(schema.battle.id, payload.battleId),
+          columns: {
+            timeout_ms: true,
+          },
+        });
+
+        if (!battleTimeout) {
+          throw new BattleNotFoundError(payload.battleId);
+        }
+
         // Generate next move with timeout handling
         const nextMoveResult = await GetNextMoveTask.triggerAndWait(
           {
@@ -125,7 +135,7 @@ export const BattleTask = schemaTask({
             blackPlayerModelId: battle.blackPlayer.model_id,
             lastInvalidMoves,
           },
-          { maxDuration: CONFIG.MAX_MOVE_GENERATION_TIME },
+          { maxDuration: battleTimeout.timeout_ms / 1000 },
         );
 
         if (!nextMoveResult.ok) {
@@ -136,7 +146,7 @@ export const BattleTask = schemaTask({
           ) {
             isValid = false;
             reasoning = "Move generation timed out";
-            response_time = CONFIG.MAX_MOVE_GENERATION_TIME * 1000;
+            response_time = battleTimeout.timeout_ms;
           } else {
             throw new BattleError(
               `Failed to get next move for ${currentPlayer}: ${nextMoveResult.error}`,
@@ -256,7 +266,7 @@ export const BattleTask = schemaTask({
             is_valid: true,
             tokens_in: null,
             tokens_out: null,
-            response_time: CONFIG.MAX_MOVE_GENERATION_TIME * 1000,
+            response_time: battleTimeout.timeout_ms,
             confidence: null,
             reasoning: "Random fallback move due to repeated invalid moves",
           });

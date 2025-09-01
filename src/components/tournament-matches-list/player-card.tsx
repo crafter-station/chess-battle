@@ -23,11 +23,13 @@ export function PlayerCard({
   className = "",
 }: PlayerCardProps) {
   // Skip query if no playerId
-  const { data: players } = useLiveQuery((q) =>
-    q
-      .from({ player: PlayersCollection })
-      .where(({ player }) => eq(player.id, playerId))
-      .select(({ player }) => ({ ...player })),
+  const { data: players } = useLiveQuery(
+    (q) =>
+      q
+        .from({ player: PlayersCollection })
+        .where(({ player }) => eq(player.id, playerId))
+        .select(({ player }) => ({ ...player })),
+    [playerId],
   );
 
   const player = players?.[0];

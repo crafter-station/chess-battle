@@ -6,6 +6,7 @@ import { ClerkProvider } from "@clerk/nextjs";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 
 import CrtToggle from "@/components/crt-toggle";
+import { Toaster } from "@/components/ui/sonner";
 
 import MergeOnSignin from "./merge-client";
 
@@ -47,6 +48,7 @@ export default function RootLayout({
           <MergeOnSignin />
           <NuqsAdapter>{children}</NuqsAdapter>
           <CrtToggle />
+          <Toaster />
         </body>
       </html>
     </ClerkProvider>

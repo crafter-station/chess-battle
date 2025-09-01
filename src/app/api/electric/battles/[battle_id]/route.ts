@@ -12,9 +12,10 @@ if (!process.env.DATABASE_URL_UNPOOLED) {
 
 export async function PUT(
   request: Request,
-  { params }: { params: { battle_id: string } },
+  { params }: { params: Promise<{ battle_id: string }> },
 ) {
   try {
+    const { battle_id } = await params;
     const pool = new Pool({
       connectionString: process.env.DATABASE_URL_UNPOOLED,
     });
@@ -28,7 +29,7 @@ export async function PUT(
 
     const battle = await db.query.battle.findFirst({
       where: and(
-        eq(schema.battle.id, params.battle_id),
+        eq(schema.battle.id, battle_id),
         eq(schema.battle.user_id, userId),
       ),
     });
@@ -48,7 +49,7 @@ export async function PUT(
         .set({
           timeout_ms: body.timeout_ms,
         })
-        .where(eq(schema.battle.id, params.battle_id));
+        .where(eq(schema.battle.id, battle_id));
 
       const txid = await tx.execute(
         sql`SELECT pg_current_xact_id()::xid::text as txid`,

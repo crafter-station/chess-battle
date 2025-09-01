@@ -1,7 +1,35 @@
 import { logger, schemaTask } from "@trigger.dev/sdk";
-import { generateObject, type ModelMessage } from "ai";
+import {
+  type GenerateObjectResult,
+  generateObject,
+  type ModelMessage,
+} from "ai";
 import { Chess } from "chess.js";
 import { z } from "zod";
+
+import { MOCK_RESPONSE, MOCK_RESPONSE_REASONING } from "@/lib/mock-responses";
+
+const schema = z.object({
+  move: z
+    .string()
+    .describe(
+      "REQUIRED: The exact move from the legal moves list (e.g., 'Nf3', 'e4', 'O-O')",
+    ),
+  reasoning: z
+    .string()
+    .optional()
+    .describe(
+      "REQUIRED: Brief tactical/strategic explanation (MAX 100 words OR 2 sentences)",
+    ),
+  confidence: z
+    .number()
+    .optional()
+    .describe(
+      "REQUIRED: Integer confidence score 1-100 (how certain you are about this move)",
+    ),
+});
+
+type MoveResult = z.infer<typeof schema>;
 
 export const GetNextMoveTask = schemaTask({
   id: "get-next-move",
@@ -21,58 +49,47 @@ export const GetNextMoveTask = schemaTask({
 
     const initialTime = Date.now();
 
-    const generateMoveResult = await generateObject({
-      model: playerModelId,
-      schema: z.object({
-        move: z
-          .string()
-          .describe(
-            "REQUIRED: The exact move from the legal moves list (e.g., 'Nf3', 'e4', 'O-O')",
-          ),
-        reasoning: z
-          .string()
-          .optional()
-          .describe(
-            "REQUIRED: Brief tactical/strategic explanation (MAX 100 words OR 2 sentences)",
-          ),
-        confidence: z
-          .number()
-          .optional()
-          .describe(
-            "REQUIRED: Integer confidence score 1-100 (how certain you are about this move)",
-          ),
-      }),
-      messages: constructMessages(chess, payload.lastInvalidMoves),
-      experimental_repairText: async () => {
-        return JSON.stringify({
-          move: "",
-        });
-      },
-      experimental_telemetry: {
-        isEnabled: true,
-      },
-    });
+    let result: GenerateObjectResult<MoveResult> | null = null;
+
+    if (process.env.NODE_ENV === "development") {
+      logger.info(`🔍 Simulating AI response for ${playerModelId}`);
+      result = await simulateAIResponse(chess, playerModelId);
+    } else {
+      result = await generateObject({
+        model: playerModelId,
+        schema,
+        messages: constructMessages(chess, payload.lastInvalidMoves),
+        experimental_repairText: async () => {
+          return JSON.stringify({
+            move: "",
+          });
+        },
+        experimental_telemetry: {
+          isEnabled: true,
+        },
+      });
+    }
 
     const responseTime = Date.now() - initialTime;
 
-    const move = generateMoveResult.object.move ?? null;
-    const tokensIn = generateMoveResult.usage?.inputTokens ?? null;
-    const tokensOut = generateMoveResult.usage?.outputTokens ?? null;
+    const move = result?.object.move ?? null;
+    const tokensIn = result?.usage?.inputTokens ?? null;
+    const tokensOut = result?.usage?.outputTokens ?? null;
 
     let rawResponse = null;
 
     if (
-      generateMoveResult.response &&
-      typeof generateMoveResult.response === "object" &&
-      "body" in generateMoveResult.response &&
-      generateMoveResult.response.body &&
-      typeof generateMoveResult.response.body === "object" &&
-      "content" in generateMoveResult.response.body &&
-      Array.isArray(generateMoveResult.response.body.content) &&
-      generateMoveResult.response.body.content[0] &&
-      typeof generateMoveResult.response.body.content[0].text === "string"
+      result?.response &&
+      typeof result.response === "object" &&
+      "body" in result.response &&
+      result.response.body &&
+      typeof result.response.body === "object" &&
+      "content" in result.response.body &&
+      Array.isArray(result.response.body.content) &&
+      result.response.body.content[0] &&
+      typeof result.response.body.content[0].text === "string"
     ) {
-      rawResponse = generateMoveResult.response.body.content[0].text;
+      rawResponse = result.response.body.content[0].text;
     } else {
       rawResponse = null;
     }
@@ -84,8 +101,8 @@ export const GetNextMoveTask = schemaTask({
       move: move ? move : null,
       tokensIn,
       tokensOut,
-      reasoning: generateMoveResult.object.reasoning,
-      confidence: generateMoveResult.object.confidence,
+      reasoning: result?.object.reasoning,
+      confidence: result?.object.confidence,
       rawResponse,
     };
   },
@@ -221,4 +238,159 @@ ${
 Analyze the position and provide your JSON response:`,
     },
   ] satisfies ModelMessage[];
+}
+
+async function simulateAIResponse(chess: Chess, playerModelId: string) {
+  const inputTokens = Math.floor(Math.random() * 100);
+  const outputTokens = Math.floor(Math.random() * 1000);
+  const totalTokens = inputTokens + outputTokens;
+  const confidence = Math.floor(Math.random() * 100);
+
+  const chessMoves = Array.from(
+    new Set([
+      ...chess.moves(),
+      "e4",
+      "e5",
+      "e6",
+      "e7",
+      "e8",
+      "reasoning",
+      "response",
+    ]),
+  );
+  const move = chessMoves[Math.floor(Math.random() * chessMoves.length)];
+  let result: GenerateObjectResult<MoveResult> | null = null;
+
+  if (move === "response") {
+    result = {
+      object: {
+        move: "",
+      },
+      usage: {
+        inputTokens,
+        outputTokens,
+        totalTokens,
+      },
+      reasoning: undefined,
+      finishReason: "stop",
+      warnings: [],
+      response: {
+        id: "123",
+        timestamp: new Date(),
+        modelId: playerModelId,
+        body: {
+          content: [
+            {
+              text: MOCK_RESPONSE,
+            },
+          ],
+        },
+      },
+      request: {
+        body: {
+          content: [
+            {
+              text: MOCK_RESPONSE,
+            },
+          ],
+        },
+      },
+      providerMetadata: {},
+      toJsonResponse: () => {
+        return new Response(JSON.stringify(MOCK_RESPONSE));
+      },
+    };
+  } else if (move === "reasoning") {
+    result = {
+      object: {
+        move: "",
+      },
+      usage: {
+        inputTokens,
+        outputTokens,
+        totalTokens,
+      },
+      reasoning: undefined,
+      finishReason: "stop",
+      warnings: [],
+      response: {
+        id: "123",
+        timestamp: new Date(),
+        modelId: playerModelId,
+        body: {
+          content: [
+            {
+              text: MOCK_RESPONSE_REASONING,
+            },
+          ],
+        },
+      },
+      request: {
+        body: {
+          content: [
+            {
+              text: MOCK_RESPONSE_REASONING,
+            },
+          ],
+        },
+      },
+      providerMetadata: {},
+      toJsonResponse: () => {
+        return new Response(JSON.stringify(MOCK_RESPONSE_REASONING));
+      },
+    };
+  } else {
+    result = {
+      object: {
+        move,
+        reasoning: "Controls center, opens diagonals for development.",
+        confidence: 75,
+      },
+      usage: {
+        inputTokens,
+        outputTokens,
+        totalTokens,
+      },
+      reasoning: "Controls center, opens diagonals for development.",
+      finishReason: "stop",
+      warnings: [],
+      response: {
+        id: "123",
+        timestamp: new Date(),
+        modelId: playerModelId,
+        body: {
+          content: [
+            {
+              text: `{"move":"${move},"reasoning":"Controls center, opens diagonals for development.","confidence":${confidence}}`,
+            },
+          ],
+        },
+      },
+      request: {
+        body: {
+          content: [
+            {
+              text: `{"move":"${move}","reasoning":"Controls center, opens diagonals for development.","confidence":${confidence}}`,
+            },
+          ],
+        },
+      },
+      providerMetadata: {},
+      toJsonResponse: () => {
+        return new Response(
+          JSON.stringify({
+            move: move,
+            reasoning: "Controls center, opens diagonals for development.",
+            confidence: confidence,
+          }),
+        );
+      },
+    };
+  }
+
+  const randomDelay = 3000 + Math.floor(Math.random() * 10000); // Random delay between 3 and 33 seconds
+
+  await new Promise((resolve) => setTimeout(resolve, randomDelay));
+
+  return result;
 }

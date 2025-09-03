@@ -16,6 +16,7 @@ export type StartBattleActionState = {
   input: {
     whitePlayerModelId?: string;
     blackPlayerModelId?: string;
+    engineMode?: "json" | "streaming";
   };
   output:
     | {
@@ -37,6 +38,9 @@ export async function StartBattleAction(
   const input: StartBattleActionState["input"] = {
     whitePlayerModelId: formData.get("whitePlayerModelId")?.toString(),
     blackPlayerModelId: formData.get("blackPlayerModelId")?.toString(),
+    engineMode:
+      (formData.get("engineMode")?.toString() as "json" | "streaming") ||
+      "json",
   };
 
   try {
@@ -93,10 +97,14 @@ export async function StartBattleAction(
       black_player_id: blackPlayerId,
     });
 
-    await BattleTask.trigger({
-      battleId,
-      userId,
-    });
+    await BattleTask.trigger(
+      {
+        battleId,
+        userId,
+        engineMode: input.engineMode ?? "json",
+      },
+      { tags: [`battle:${battleId}`, `mode:${input.engineMode ?? "json"}`] },
+    );
 
     // Increment guest battle count after successful trigger
     if (!authedUserId) {

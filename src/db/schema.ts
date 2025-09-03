@@ -149,3 +149,16 @@ export const ai_model = pgTable("ai_model", {
 });
 
 export type AIModelSelect = typeof ai_model.$inferSelect;
+
+export const player_rating = pgTable("player_rating", {
+  id: text("id").primaryKey(),
+  player_id: text("player_id").references(() => player.id),
+  tournament_id: text("tournament_id").references(() => tournament.id),
+  rating: integer("rating").notNull().default(1200), // Standard ELO starting rating for chess
+  provisional: boolean("provisional").notNull().default(true),
+  games_played: integer("games_played").notNull().default(0),
+  k_factor: integer("k_factor").notNull().default(32),
+  created_at: timestamp("created_at").notNull().defaultNow(),
+});
+
+export type PlayerRatingSelect = typeof player_rating.$inferSelect;

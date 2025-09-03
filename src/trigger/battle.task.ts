@@ -1,11 +1,12 @@
 import { logger, schemaTask } from "@trigger.dev/sdk";
 import { Chess } from "chess.js";
-import { and, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { z } from "zod";
 
 import { db } from "@/db";
 import * as schema from "@/db/schema";
 
+import { calculateKFactor, updateRatings } from "@/lib/elo";
 import type { GameEndReason } from "@/lib/game-end-reason";
 import { nanoid } from "@/lib/nanoid";
 
@@ -375,6 +376,67 @@ export const BattleTask = schemaTask({
         game_end_reason: gameEndReason,
       })
       .where(eq(schema.battle.id, payload.battleId));
+
+    const whiteCurrent = await db
+      .select()
+      .from(schema.player_rating)
+      .where(eq(schema.player_rating.player_id, battle.white_player_id))
+      .orderBy(desc(schema.player_rating.created_at))
+      .limit(1);
+    const blackCurrent = await db
+      .select()
+      .from(schema.player_rating)
+      .where(eq(schema.player_rating.player_id, battle.black_player_id))
+      .orderBy(desc(schema.player_rating.created_at))
+      .limit(1);
+
+    const whiteRating = whiteCurrent[0]?.rating ?? 1200;
+    const whiteGames = whiteCurrent[0]?.games_played ?? 0;
+    const whiteK = calculateKFactor(whiteGames, whiteRating);
+    const blackRating = blackCurrent[0]?.rating ?? 1200;
+    const blackGames = blackCurrent[0]?.games_played ?? 0;
+    const blackK = calculateKFactor(blackGames, blackRating);
+
+    const resultKey =
+      outcome === "draw"
+        ? "draw"
+        : winnerColor === "white"
+          ? "white_win"
+          : "black_win";
+    const calc = updateRatings(
+      {
+        rating: whiteRating,
+        gamesPlayed: whiteGames,
+        provisional: whiteGames < 10,
+        kFactor: whiteK,
+      },
+      {
+        rating: blackRating,
+        gamesPlayed: blackGames,
+        provisional: blackGames < 10,
+        kFactor: blackK,
+      },
+      resultKey,
+    );
+
+    await db.insert(schema.player_rating).values({
+      id: nanoid(),
+      player_id: battle.white_player_id,
+      tournament_id: battle.tournament_id ?? null,
+      rating: calc.white.newRating,
+      provisional: whiteGames + 1 < 10,
+      games_played: whiteGames + 1,
+      k_factor: whiteK,
+    });
+    await db.insert(schema.player_rating).values({
+      id: nanoid(),
+      player_id: battle.black_player_id,
+      tournament_id: battle.tournament_id ?? null,
+      rating: calc.black.newRating,
+      provisional: blackGames + 1 < 10,
+      games_played: blackGames + 1,
+      k_factor: blackK,
+    });
 
     logger.info(
       `🏁 Battle completed: ${outcome === "win" ? "Decisive result" : "Draw"} - ${

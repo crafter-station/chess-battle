@@ -25,7 +25,7 @@ export const FetchModelDetailsTask = schemaTask({
       throw new Error("FIRECRAWL_API_KEY is not set");
     }
 
-    const jsonSchema: Record<string, any> = {
+    const jsonSchema: Record<string, unknown> = {
       $schema: "http://json-schema.org/draft-07/schema#",
       title: "AI Model Minimal Schema",
       type: "object",
@@ -69,15 +69,38 @@ export const FetchModelDetailsTask = schemaTask({
       throw new Error(`Firecrawl HTTP ${resp.status}`);
     }
 
-    const doc: any = await resp.json();
-    // fallback to root.json or data
-    const minimal: MinimalModelExtract | undefined =
-      (doc?.data?.json as any) ?? (doc?.json as any) ?? (doc?.data as any);
+    const doc: unknown = await resp.json();
+    type JsonObject = Record<string, unknown>;
+    const rootObj: JsonObject | undefined =
+      typeof doc === "object" && doc !== null ? (doc as JsonObject) : undefined;
+
+    const dataObj: JsonObject | undefined =
+      typeof rootObj?.data === "object" && rootObj?.data !== null
+        ? (rootObj.data as JsonObject)
+        : undefined;
+
+    const candidate: unknown = dataObj?.json ?? rootObj?.json ?? rootObj?.data;
+
+    const zMinimal = z
+      .object({
+        name: z.string().optional(),
+        description: z.string().optional(),
+        logos: z.array(z.string()).optional(),
+        chat_url: z.string().optional(),
+      })
+      .partial();
+
+    const parsed = zMinimal.safeParse(candidate);
+    const minimal: MinimalModelExtract | undefined = parsed.success
+      ? parsed.data
+      : undefined;
 
     if (!minimal || typeof minimal !== "object") {
+      const rootKeys = Object.keys(rootObj ?? {});
+      const dataKeys = Object.keys(dataObj ?? {});
       logger.warn("Firecrawl returned no parsable JSON payload", {
-        keys: Object.keys(doc || {}),
-        dataKeys: Object.keys(doc?.data || {}),
+        keys: rootKeys,
+        dataKeys,
       });
     }
 

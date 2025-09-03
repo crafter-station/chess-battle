@@ -30,6 +30,12 @@ export function Navbar() {
                 >
                   &gt; CREATE_TOURNAMENT
                 </Link>
+                <Link
+                  href="/leaderboard"
+                  className="terminal-text hover:text-terminal-accent transition-colors font-mono text-sm"
+                >
+                  &gt; LEADERBOARD
+                </Link>
               </div>
             </nav>
           </CardContent>

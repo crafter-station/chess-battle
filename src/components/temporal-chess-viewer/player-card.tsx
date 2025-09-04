@@ -4,6 +4,12 @@ import { useParams } from "next/navigation";
 import React from "react";
 
 import { eq, useLiveQuery } from "@tanstack/react-db";
+import {
+  useRealtimeRunsWithTag,
+  useRealtimeRunWithStreams,
+} from "@trigger.dev/react-hooks";
+
+import type { GetNextMoveStreamingTaskType } from "@/trigger/get-next-move-streaming.task";
 
 import {
   AIModelsCollection,
@@ -80,6 +86,46 @@ export function PlayerCard({
     return moves.reduce((acc, move) => acc + (move.tokens_out ?? 0), 0);
   }, [totalMoves, moves]);
 
+  // Realtime streamed text from Trigger.dev for this player
+  const playerTag = React.useMemo(
+    () => (color === "WHITE" ? "player:white" : "player:black"),
+    [color],
+  );
+
+  // Acquire access token from backend (kept simple: assumes public or server issues token elsewhere)
+  const [accessToken, setAccessToken] = React.useState<string | null>(null);
+  React.useEffect(() => {
+    let cancelled = false;
+    async function fetchToken() {
+      try {
+        const res = await fetch(`/api/trigger/token?battleId=${battle_id}`);
+        if (!res.ok) return;
+        const data = (await res.json()) as { token?: string };
+        if (!cancelled) setAccessToken(data.token ?? null);
+      } catch {
+        // ignore
+      }
+    }
+    fetchToken();
+    return () => {
+      cancelled = true;
+    };
+  }, [battle_id]);
+
+  // Defer realtime subscriptions until we have a token by delegating to a child component
+  const streamedPanel = React.useMemo(() => {
+    if (!accessToken) {
+      return null;
+    }
+    return (
+      <PlayerRunStreamViewer
+        accessToken={accessToken}
+        battleTag={`battle:${battle_id}`}
+        playerTag={playerTag}
+      />
+    );
+  }, [accessToken, battle_id, playerTag]);
+
   if (!player) {
     return playerId;
   }
@@ -150,6 +196,8 @@ export function PlayerCard({
         <div className="terminal-text text-xs opacity-60 mt-1">
           {outputTokenCount} tokens out
         </div>
+
+        {streamedPanel}
       </CardContent>
     </Card>
   );
@@ -165,4 +213,75 @@ function formatDurationToHumanReadable(duration: number) {
   } else {
     return `${Math.round(duration / 3600000)}h`;
   }
+}
+
+function PlayerRunStreamViewer({
+  accessToken,
+  battleTag,
+  playerTag,
+}: {
+  accessToken: string;
+  battleTag: string;
+  playerTag: string;
+}) {
+  // Safe to mount hooks here because token is guaranteed
+  const { runs } = useRealtimeRunsWithTag(battleTag, {
+    accessToken,
+  });
+
+  const latestRunId = React.useMemo(() => {
+    const latest = runs
+      .filter((r) => r.tags?.includes(playerTag))
+      .sort(
+        (a, b) =>
+          new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
+      )[0];
+    return latest?.id ?? null;
+  }, [runs, playerTag]);
+
+  const { run: latestRun, streams } = useRealtimeRunWithStreams<
+    GetNextMoveStreamingTaskType,
+    { llm: string }
+  >(latestRunId ?? undefined, { accessToken });
+
+  const streamedText = React.useMemo(() => {
+    const llmChunks = streams?.llm as string[] | undefined;
+    if (Array.isArray(llmChunks) && llmChunks.length > 0) {
+      return llmChunks.join("");
+    }
+
+    if (
+      latestRun?.output &&
+      typeof latestRun.output === "object" &&
+      "rawResponse" in latestRun.output &&
+      typeof (latestRun.output as { rawResponse?: unknown }).rawResponse ===
+        "string"
+    ) {
+      return (latestRun.output as { rawResponse?: string })
+        .rawResponse as string;
+    }
+    return latestRun ? `Status: ${latestRun.status}` : "";
+  }, [streams, latestRun]);
+
+  // Auto-scroll the container to bottom on new chunks
+  const scrollRef = React.useRef<HTMLDivElement | null>(null);
+  React.useEffect(() => {
+    const el = scrollRef.current;
+    if (el && streamedText !== undefined) {
+      el.scrollTop = el.scrollHeight;
+    }
+  }, [streamedText]);
+
+  if (!latestRunId && !streamedText) return null;
+
+  return (
+    <div className="mt-3 p-2 rounded border border-terminal-border/60 bg-terminal-card/60">
+      <div
+        ref={scrollRef}
+        className="terminal-text text-xs font-mono whitespace-pre-wrap break-words max-h-40 overflow-auto"
+      >
+        {streamedText}
+      </div>
+    </div>
+  );
 }

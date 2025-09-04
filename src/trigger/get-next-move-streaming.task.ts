@@ -4,9 +4,9 @@ import { Chess } from "chess.js";
 import { z } from "zod";
 
 // Heuristic regexes to extract a SAN move from arbitrary text
+// Note: We intentionally do NOT include a "Final Answer" pattern here
+// because we handle it explicitly before this fallback scan.
 const SAN_REGEXES: RegExp[] = [
-  // Explicit final answer pattern
-  /Final\s*Answer\s*:\s*([A-Za-z0-9=+#-]+)\b/i,
   // Castling (O-O, O-O-O) with optional check/mate
   /\bO-O(?:-O)?[#+]?\b/g,
   // Piece moves with optional disambiguation and capture, e.g., Nf3, R1e3, Qxe7+, Bbd2, Kd1
@@ -26,10 +26,13 @@ function extractMoveFromText(
   const legalSet = new Set(legalMoves);
   const normalizedLegalSet = new Set(legalMoves.map(normalizeSanForComparison));
 
-  // 1) If there is a "Final Answer: <move>" style, try that first.
-  const finalAns = text.match(/Final\s*Answer\s*:\s*([A-Za-z0-9=+#-]+)/i);
-  if (finalAns?.[1]) {
-    const candidate = finalAns[1].trim();
+  // 1) If there are "Final Answer: <move>" occurrences, prefer the last one.
+  const allFinals = [
+    ...text.matchAll(/Final\s*Answer\s*:\s*([A-Za-z0-9=+#-]+)/gi),
+  ];
+  const lastFinal = allFinals.at(-1)?.[1];
+  if (lastFinal) {
+    const candidate = lastFinal.trim();
     if (legalSet.has(candidate)) return candidate;
     const normalized = normalizeSanForComparison(candidate);
     if (normalizedLegalSet.has(normalized)) {
@@ -130,10 +133,20 @@ export const GetNextMoveStreamingTask = schemaTask({
 
     const start = Date.now();
 
+    // Track token usage captured on stream finish (if provider supports it)
+    let tokensIn: number | null = null;
+    let tokensOut: number | null = null;
+
     // Stream the model's response
     const result = streamText({
       model: playerModelId,
       messages: constructMessages(chess, payload.lastInvalidMoves),
+      // Capture usage metrics when the stream completes
+      onFinish: (event) => {
+        // Some providers expose usage; if present, record it
+        tokensIn = event.usage?.inputTokens ?? null;
+        tokensOut = event.usage?.outputTokens ?? null;
+      },
       // Keep system/user messages simple and provider-agnostic
       // No provider-specific options here to support multiple vendors
     });
@@ -153,9 +166,7 @@ export const GetNextMoveStreamingTask = schemaTask({
     const legalMoves = chess.moves();
     const extractedMove = extractMoveFromText(fullText, legalMoves);
 
-    // We do not attempt to parse tokens here; set to null for consistency
-    const tokensIn: number | null = null;
-    const tokensOut: number | null = null;
+    // tokensIn/tokensOut may remain null if the provider doesn't return usage
 
     logger.info("LLM streamed text captured", {
       length: fullText.length,

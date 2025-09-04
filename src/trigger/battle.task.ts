@@ -11,6 +11,7 @@ import type { GameEndReason } from "@/lib/game-end-reason";
 import { nanoid } from "@/lib/nanoid";
 
 import { GetNextMoveTask } from "./get-next-move.task";
+import { GetNextMoveStreamingTask } from "./get-next-move-streaming.task";
 
 // Configuration constants
 const CONFIG = {
@@ -43,6 +44,8 @@ export const BattleTask = schemaTask({
     battleId: z.string(),
     /** User ID who owns/initiated the battle */
     userId: z.string(),
+    /** Engine mode: json (generateObject) or streaming (free text + heuristic) */
+    engineMode: z.enum(["json", "streaming"]).default("json"),
   }),
   run: async (payload) => {
     // Fetch battle with all related data
@@ -129,15 +132,41 @@ export const BattleTask = schemaTask({
         }
 
         // Generate next move with timeout handling
-        const nextMoveResult = await GetNextMoveTask.triggerAndWait(
-          {
-            board: chess.fen(),
-            whitePlayerModelId: battle.whitePlayer.model_id,
-            blackPlayerModelId: battle.blackPlayer.model_id,
-            lastInvalidMoves,
-          },
-          { maxDuration: battleTimeout.timeout_ms / 1000 },
-        );
+        const playerColorTag =
+          chess.turn() === "w" ? "player:white" : "player:black";
+        const baseTags = [
+          `battle:${payload.battleId}`,
+          playerColorTag,
+          `model:${currentPlayerModelId}`,
+          `mode:${payload.engineMode}`,
+        ];
+
+        const nextMoveResult =
+          payload.engineMode === "streaming"
+            ? await GetNextMoveStreamingTask.triggerAndWait(
+                {
+                  board: chess.fen(),
+                  whitePlayerModelId: battle.whitePlayer.model_id,
+                  blackPlayerModelId: battle.blackPlayer.model_id,
+                  lastInvalidMoves,
+                },
+                {
+                  maxDuration: battleTimeout.timeout_ms / 1000,
+                  tags: [...baseTags, "task:get-next-move-streaming"],
+                },
+              )
+            : await GetNextMoveTask.triggerAndWait(
+                {
+                  board: chess.fen(),
+                  whitePlayerModelId: battle.whitePlayer.model_id,
+                  blackPlayerModelId: battle.blackPlayer.model_id,
+                  lastInvalidMoves,
+                },
+                {
+                  maxDuration: battleTimeout.timeout_ms / 1000,
+                  tags: [...baseTags, "task:get-next-move"],
+                },
+              );
 
         if (!nextMoveResult.ok) {
           logger.error(`Failed to get next move: ${nextMoveResult.error}`);
@@ -212,7 +241,12 @@ export const BattleTask = schemaTask({
           response_time,
           confidence,
           reasoning,
-          raw_response: isValid ? null : raw_response,
+          raw_response:
+            payload.engineMode === "streaming"
+              ? raw_response
+              : isValid
+                ? null
+                : raw_response,
         });
 
         // Update invalid move tracking

@@ -23,6 +23,7 @@
     "@tanstack/query-core": "^5.85.5",
     "@tanstack/query-db-collection": "^0.2.8",
     "@tanstack/react-db": "^0.1.9",
+    "@trigger.dev/react-hooks": "^4.0.2",
     "@trigger.dev/sdk": "4.0.2",
     "ai": "^5.0.22",
     "chess.js": "^1.4.0",

@@ -6,16 +6,19 @@ import * as schema from "@/db/schema";
 
 import { getUser } from "@/lib/get-user";
 
-if (!process.env.DATABASE_URL_UNPOOLED) {
-  throw new Error("DATABASE_URL_UNPOOLED is not set");
-}
-
 export async function PUT(
   request: Request,
   { params }: { params: Promise<{ battle_id: string }> },
 ) {
   try {
     const { battle_id } = await params;
+
+    if (!process.env.DATABASE_URL_UNPOOLED) {
+      return Response.json(
+        { success: false, error: "DATABASE_URL_UNPOOLED is not set" },
+        { status: 500 },
+      );
+    }
     const pool = new Pool({
       connectionString: process.env.DATABASE_URL_UNPOOLED,
     });

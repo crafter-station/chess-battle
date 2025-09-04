@@ -15,7 +15,7 @@ export async function GET(request: Request) {
     read: {
       tags: [`battle:${battleId}`],
     },
-  } as const;
+  };
 
   try {
     const token = await triggerAuth.createPublicToken({

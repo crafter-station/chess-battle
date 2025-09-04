@@ -20,6 +20,9 @@ export default function BattleSetup() {
   const router = useRouter();
   const [whiteModel, setWhiteModel] = React.useState<string>("");
   const [blackModel, setBlackModel] = React.useState<string>("");
+  const [engineMode, setEngineMode] = React.useState<"json" | "streaming">(
+    "json",
+  );
 
   const { data: models } = useLiveQuery((q) =>
     q.from({ model: AIModelsCollection }).select(({ model }) => ({
@@ -108,6 +111,31 @@ export default function BattleSetup() {
           <form action={action}>
             <input type="hidden" name="whitePlayerModelId" value={whiteModel} />
             <input type="hidden" name="blackPlayerModelId" value={blackModel} />
+            <input type="hidden" name="engineMode" value={engineMode} />
+
+            <div className="terminal-text text-sm mt-4">
+              <div className="mb-2 font-mono">Engine mode</div>
+              <div className="flex items-center gap-4">
+                <label className="inline-flex items-center gap-2">
+                  <input
+                    type="radio"
+                    name="engineModeRadio"
+                    checked={engineMode === "json"}
+                    onChange={() => setEngineMode("json")}
+                  />
+                  <span>JSON schema</span>
+                </label>
+                <label className="inline-flex items-center gap-2">
+                  <input
+                    type="radio"
+                    name="engineModeRadio"
+                    checked={engineMode === "streaming"}
+                    onChange={() => setEngineMode("streaming")}
+                  />
+                  <span>Streaming + heuristic</span>
+                </label>
+              </div>
+            </div>
             <Button
               type="submit"
               disabled={!whiteModel || !blackModel || isPending}

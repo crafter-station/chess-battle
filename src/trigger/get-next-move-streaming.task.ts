@@ -1,7 +1,22 @@
 import { logger, metadata, schemaTask } from "@trigger.dev/sdk";
-import { streamText } from "ai";
+import { simulateReadableStream, streamText } from "ai";
 import { Chess } from "chess.js";
 import { z } from "zod";
+
+// Interface for streaming result (both real and simulated)
+interface StreamingResult {
+  textStream: ReadableStream<string>;
+  onFinish?: (
+    callback: (event: {
+      usage?: { inputTokens?: number; outputTokens?: number };
+    }) => void,
+  ) => void;
+  usage?: {
+    inputTokens: number;
+    outputTokens: number;
+    totalTokens: number;
+  };
+}
 
 // Heuristic regexes to extract a SAN move from arbitrary text
 // Note: We intentionally do NOT include a "Final Answer" pattern here
@@ -115,6 +130,82 @@ Final Answer: <SAN>`;
   ];
 }
 
+async function simulateStreamingAIResponse(
+  chess: Chess,
+  _playerModelId: string,
+): Promise<StreamingResult> {
+  const chessMoves = chess.moves();
+  const validMove = chessMoves[Math.floor(Math.random() * chessMoves.length)];
+
+  // Create different types of mock responses similar to the original task
+  const responseTypes = ["normal", "reasoning", "response"];
+  const responseType =
+    responseTypes[Math.floor(Math.random() * responseTypes.length)];
+
+  let mockText = "";
+
+  switch (responseType) {
+    case "reasoning":
+      mockText = `Looking at this position, I need to evaluate the key factors. The center control is important, and piece development should be prioritized. The move ${validMove} appears to be the strongest option here as it improves my position while maintaining pressure.\n\nFinal Answer: ${validMove}`;
+      break;
+    case "response":
+      mockText = `This position requires careful analysis. Material is balanced, but positional factors favor active piece play. I can see that ${validMove} creates tactical opportunities while securing my king safety. This move also opens up future possibilities for coordinated attacks.\n\nFinal Answer: ${validMove}`;
+      break;
+    default:
+      mockText = `I'll analyze this position carefully. The move ${validMove} looks promising as it controls center squares and improves piece coordination.\n\nFinal Answer: ${validMove}`;
+  }
+
+  // Split text into chunks for streaming simulation
+  const words = mockText.split(" ");
+  const chunks: string[] = [];
+
+  // Create chunks of 2-4 words each
+  for (let i = 0; i < words.length; i += Math.floor(Math.random() * 3) + 2) {
+    const chunkWords = words.slice(i, i + Math.floor(Math.random() * 3) + 2);
+    chunks.push(
+      chunkWords.join(" ") + (i + chunkWords.length < words.length ? " " : ""),
+    );
+  }
+
+  // Generate mock usage statistics
+  const inputTokens = Math.floor(Math.random() * 100) + 50;
+  const outputTokens = Math.floor(Math.random() * 200) + 100;
+
+  // Create simulated stream with realistic delays
+  const textStream = simulateReadableStream({
+    chunks: chunks,
+    chunkDelayInMs: 100 + Math.floor(Math.random() * 200), // 100-300ms between chunks
+  });
+
+  // Return object structure compatible with streamText result
+  return {
+    textStream,
+    usage: {
+      inputTokens,
+      outputTokens,
+      totalTokens: inputTokens + outputTokens,
+    },
+    onFinish: (
+      callback: (event: {
+        usage?: { inputTokens?: number; outputTokens?: number };
+      }) => void,
+    ) => {
+      // Simulate the onFinish callback after stream completes
+      setTimeout(
+        () => {
+          callback({
+            usage: {
+              inputTokens,
+              outputTokens,
+            },
+          });
+        },
+        chunks.length * 200 + 1000,
+      ); // Rough estimate of when stream will finish
+    },
+  };
+}
+
 export const GetNextMoveStreamingTask = schemaTask({
   id: "get-next-move-streaming",
   schema: z.object({
@@ -137,19 +228,39 @@ export const GetNextMoveStreamingTask = schemaTask({
     let tokensIn: number | null = null;
     let tokensOut: number | null = null;
 
-    // Stream the model's response
-    const result = streamText({
-      model: playerModelId,
-      messages: constructMessages(chess, payload.lastInvalidMoves),
-      // Capture usage metrics when the stream completes
-      onFinish: (event) => {
-        // Some providers expose usage; if present, record it
-        tokensIn = event.usage?.inputTokens ?? null;
-        tokensOut = event.usage?.outputTokens ?? null;
-      },
-      // Keep system/user messages simple and provider-agnostic
-      // No provider-specific options here to support multiple vendors
-    });
+    // biome-ignore lint/suspicious/noExplicitAny: streaming result
+    let result: any;
+
+    if (process.env.NODE_ENV === "development") {
+      logger.info(`🔍 Simulating streaming AI response for ${playerModelId}`);
+      result = await simulateStreamingAIResponse(chess, playerModelId);
+
+      // Set up the onFinish callback to capture usage (simulation)
+      if (result.onFinish) {
+        result.onFinish(
+          (event: {
+            usage?: { inputTokens?: number; outputTokens?: number };
+          }) => {
+            tokensIn = event.usage?.inputTokens ?? null;
+            tokensOut = event.usage?.outputTokens ?? null;
+          },
+        );
+      }
+    } else {
+      // Stream the model's response
+      result = streamText({
+        model: playerModelId,
+        messages: constructMessages(chess, payload.lastInvalidMoves),
+        // Capture usage metrics when the stream completes
+        onFinish: (event) => {
+          // Some providers expose usage; if present, record it
+          tokensIn = event.usage?.inputTokens ?? null;
+          tokensOut = event.usage?.outputTokens ?? null;
+        },
+        // Keep system/user messages simple and provider-agnostic
+        // No provider-specific options here to support multiple vendors
+      });
+    }
 
     // Expose the text stream for realtime subscriptions
     const stream = await metadata.stream("llm", result.textStream);

@@ -1,5 +1,9 @@
 import Link from "next/link";
 
+import { UserButton } from "@clerk/nextjs";
+
+import { CreditsButton } from "./credits-button";
+
 export function Navbar() {
   return (
     <nav className="sticky top-0 z-50 bg-black/95 backdrop-blur-sm border-b border-terminal-accent/20">
@@ -45,6 +49,8 @@ export function Navbar() {
               LEADERBOARD
             </Link>
           </div>
+          <UserButton />
+          <CreditsButton />
         </div>
       </div>
     </nav>

@@ -7,7 +7,6 @@ import { eq, useLiveQuery } from "@tanstack/react-db";
 
 import { BattlesCollection, TournamentsCollection } from "@/db/electric";
 
-import { Navbar } from "@/components/navbar";
 import { MatchesList } from "@/components/tournament-matches-list";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -46,8 +45,7 @@ export function TournamentPageClient({
   // Show loading state until mounted and data loaded
   if (!mounted || tournamentLoading) {
     return (
-      <div className="min-h-screen terminal-card crt-flicker">
-        <Navbar />
+      <div className="min-h-screen bg-background crt-flicker">
         <div className="max-w-6xl mx-auto px-6 py-8">
           <Card className="terminal-card terminal-border">
             <CardContent className="p-8 text-center">
@@ -63,8 +61,7 @@ export function TournamentPageClient({
 
   if (!tournament || tournament.length === 0) {
     return (
-      <div className="min-h-screen terminal-card crt-flicker">
-        <Navbar />
+      <div className="min-h-screen bg-background crt-flicker">
         <div className="max-w-6xl mx-auto px-6 py-8">
           <Card className="terminal-card terminal-border">
             <CardContent className="p-8 text-center">
@@ -79,9 +76,7 @@ export function TournamentPageClient({
   }
 
   return (
-    <div className="min-h-screen terminal-card crt-flicker">
-      <Navbar />
-
+    <div className="min-h-screen bg-background crt-flicker">
       {/* Tournament Header */}
       <div className="max-w-6xl mx-auto px-6 py-8">
         <Card className="terminal-card terminal-border">

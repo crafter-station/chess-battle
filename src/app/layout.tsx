@@ -1,16 +1,17 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist_Mono, Oxanium } from "next/font/google";
 import "./globals.css";
 
 import { ClerkProvider } from "@clerk/nextjs";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 
 import CrtToggle from "@/components/crt-toggle";
+import { Navbar } from "@/components/navbar";
 import { Toaster } from "@/components/ui/sonner";
 
 import MergeOnSignin from "./merge-client";
 
-const geistSans = Geist({
+const geistSans = Oxanium({
   variable: "--font-geist-sans",
   subsets: ["latin"],
 });
@@ -43,9 +44,10 @@ export default function RootLayout({
           />
         </head>
         <body
-          className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+          className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased`}
         >
           <MergeOnSignin />
+          <Navbar />
           <NuqsAdapter>{children}</NuqsAdapter>
           <CrtToggle />
           <Toaster />

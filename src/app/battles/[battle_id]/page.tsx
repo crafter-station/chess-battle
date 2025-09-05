@@ -25,7 +25,7 @@ const TemporalChessViewer = dynamic(
 
 export default function Page() {
   return (
-    <div className="min-h-screen terminal-card crt-flicker">
+    <div className="min-h-screen bg-background crt-flicker">
       {/* Temporal Viewer */}
       <div className="max-w-4xl mx-auto px-6">
         <SignedOut>

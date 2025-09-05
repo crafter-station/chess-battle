@@ -1,13 +1,28 @@
 "use client";
 
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useActionState, useEffect, useState } from "react";
+
+import { useLiveQuery } from "@tanstack/react-db";
+
+import { AIModelsCollection } from "@/db/electric";
 
 import { MODELS } from "@/lib/models";
 
 import { type ModelOption, ModelSelect } from "@/components/model-select";
-import { Navbar } from "@/components/navbar";
-import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+} from "@/components/ui/drawer";
 
 import {
   StartTournamentAction,
@@ -32,6 +47,98 @@ interface BracketPosition {
   isSelectable: boolean;
 }
 
+// Provider logos map
+const PROVIDER_LOGOS = {
+  alibaba: "https://avatars.githubusercontent.com/u/137491736?s=200&v=4", // Qwen
+  anthropic: "https://avatars.githubusercontent.com/u/46360699?s=200&v=4", // Claude
+  openai: "https://avatars.githubusercontent.com/u/14957082?s=200&v=4", // OpenAI
+  cohere: "https://avatars.githubusercontent.com/u/29539506?s=200&v=4", // Cohere
+  xai: "https://avatars.githubusercontent.com/u/150673994?s=200&v=4", // xAI/Grok
+  google: "https://avatars.githubusercontent.com/u/1342004?s=200&v=4", // Google/Gemini
+  deepseek: "https://avatars.githubusercontent.com/u/139544350?s=200&v=4", // DeepSeek
+  moonshotai: "https://avatars.githubusercontent.com/u/126165481?s=200&v=4", // Moonshot/Kimi
+} as const;
+
+// Dice icon component
+function DiceIcon({ className = "w-4 h-4" }: { className?: string }) {
+  return (
+    <svg
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      className={className}
+    >
+      <title>Dice Icon</title>
+      <path
+        d="M5 3H3v18h18V3H5zm14 2v14H5V5h14zM9 7H7v2h2V7zm6 0h2v2h-2V7zm-6 8H7v2h2v-2zm6 0h2v2h-2v-2zm-2-4h-2v2h2v-2z"
+        fill="currentColor"
+      />
+    </svg>
+  );
+}
+
+// Model icon component
+function ModelIcon({
+  modelId,
+  allModels,
+  size = "sm",
+}: {
+  modelId: string;
+  allModels?: Array<{
+    canonical_id: string;
+    name?: string | null;
+    logo_url?: string | null;
+  }> | null;
+  size?: "sm" | "xs";
+}) {
+  const model = allModels?.find((m) => m.canonical_id === modelId);
+  const sizeClass = size === "xs" ? "w-4 h-4" : "w-5 h-5";
+
+  // Use model's logo_url first
+  if (model?.logo_url) {
+    return (
+      <Image
+        src={model.logo_url}
+        alt={model.name || model.canonical_id}
+        width={size === "xs" ? 16 : 20}
+        height={size === "xs" ? 16 : 20}
+        className={`${sizeClass} rounded shrink-0 object-cover`}
+        onError={(e) => {
+          e.currentTarget.style.display = "none";
+        }}
+      />
+    );
+  }
+
+  // Fallback to provider logos if no model logo_url
+  const provider = modelId?.split("/")[0] as keyof typeof PROVIDER_LOGOS;
+  const providerLogo = provider ? PROVIDER_LOGOS[provider] : null;
+
+  if (providerLogo) {
+    return (
+      <Image
+        src={providerLogo}
+        alt={provider || "AI Model"}
+        width={size === "xs" ? 16 : 20}
+        height={size === "xs" ? 16 : 20}
+        className={`${sizeClass} rounded shrink-0 object-cover`}
+        onError={(e) => {
+          e.currentTarget.style.display = "none";
+        }}
+      />
+    );
+  }
+
+  // Final fallback to brain emoji
+  return (
+    <div
+      className={`${sizeClass} rounded bg-terminal-border flex items-center justify-center text-xs opacity-70 shrink-0`}
+    >
+      🧠
+    </div>
+  );
+}
+
 // Mock model options - in real app, fetch from API
 const mockModelOptions: ModelOption[] = MODELS.map((model, index) => ({
   canonical_id: model,
@@ -48,6 +155,26 @@ export default function TournamentsPage() {
   const [selectedSide, setSelectedSide] = useState<"white" | "black" | null>(
     null,
   );
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Get all AI models for logo lookup
+  const { data: allModels } = useLiveQuery((q) =>
+    q.from({ model: AIModelsCollection }).select(({ model }) => ({
+      canonical_id: model.canonical_id,
+      name: model.name,
+      description: model.description,
+      logo_url: model.logo_url,
+      provider: model.provider,
+    })),
+  );
+
+  // Check if mobile
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
 
   // Initialize tournament action state
   const initialState: StartTournamentActionState = {
@@ -115,15 +242,15 @@ export default function TournamentsPage() {
     if (!selectedPosition || !selectedSide) return;
 
     const [round, position] = selectedPosition.split("-").map(Number);
+    const modelsToUse =
+      allModels && allModels.length > 0 ? allModels : mockModelOptions;
+    const selectedModel = modelsToUse.find((m) => m.canonical_id === modelId);
+
     const newPlayer: TournamentPlayer = {
       id: `player-${Date.now()}`,
       modelId,
-      name:
-        mockModelOptions.find((m) => m.canonical_id === modelId)?.name ||
-        modelId,
-      logo:
-        mockModelOptions.find((m) => m.canonical_id === modelId)?.logo_url ||
-        undefined,
+      name: selectedModel?.name || modelId,
+      logo: selectedModel?.logo_url || undefined,
     };
 
     setBrackets((prev) =>
@@ -148,7 +275,9 @@ export default function TournamentsPage() {
       if (bracket.blackPlayer) usedModels.add(bracket.blackPlayer.modelId);
     });
 
-    const availableModels = mockModelOptions.filter(
+    const modelsToUse =
+      allModels && allModels.length > 0 ? allModels : mockModelOptions;
+    const availableModels = modelsToUse.filter(
       (model) => !usedModels.has(model.canonical_id),
     );
 
@@ -193,7 +322,9 @@ export default function TournamentsPage() {
       if (bracket.blackPlayer) usedModels.add(bracket.blackPlayer.modelId);
     });
 
-    const availableModels = mockModelOptions.filter(
+    const modelsToUse =
+      allModels && allModels.length > 0 ? allModels : mockModelOptions;
+    const availableModels = modelsToUse.filter(
       (model) => !usedModels.has(model.canonical_id),
     );
     const shuffledModels = [...availableModels].sort(() => Math.random() - 0.5);
@@ -237,9 +368,9 @@ export default function TournamentsPage() {
 
   const handleShuffleAll = () => {
     const firstRoundPositions = brackets.filter((b) => b.round === 0);
-    const availableModels = [...mockModelOptions].sort(
-      () => Math.random() - 0.5,
-    );
+    const modelsToUse =
+      allModels && allModels.length > 0 ? allModels : mockModelOptions;
+    const availableModels = [...modelsToUse].sort(() => Math.random() - 0.5);
 
     setBrackets((prev) => {
       const updated = [...prev];
@@ -288,8 +419,8 @@ export default function TournamentsPage() {
 
     if (!bracket.isSelectable) {
       return (
-        <div className="w-40 h-20 bg-gradient-to-r from-yellow-900/30 to-yellow-800/30 border border-yellow-600/40 rounded-md flex items-center justify-center backdrop-blur-sm">
-          <span className="text-yellow-300 text-xs font-mono font-bold tracking-wider">
+        <div className="w-60 h-24 bg-black/40 border-2 border-yellow-600/30 rounded-lg flex items-center justify-center backdrop-blur-sm">
+          <span className="text-yellow-400 text-sm font-mono font-bold tracking-wide">
             TBD
           </span>
         </div>
@@ -303,99 +434,117 @@ export default function TournamentsPage() {
       return (
         <div className="relative group">
           <div
-            className={`w-40 h-20 bg-gradient-to-r from-slate-800 to-slate-700 border-2 ${
-              isComplete ? "border-green-500/60" : "border-orange-500/60"
-            } rounded-md flex flex-col p-2 backdrop-blur-sm shadow-lg`}
+            className={`w-60 h-24 rounded-lg p-3 transition-all duration-200 ${
+              isComplete
+                ? "bg-green-900/20 border-2 border-green-500/60 shadow-lg shadow-green-500/10"
+                : "bg-orange-900/20 border-2 border-orange-500/60"
+            }`}
           >
             {/* White Player */}
-            <div className="flex items-center mb-1">
-              <div className="w-3 h-3 bg-white rounded-sm mr-2 border border-gray-400"></div>
-              <div className="flex-1 min-w-0">
-                {bracket.whitePlayer ? (
-                  <div className="text-xs font-bold text-white truncate">
+            <button
+              type="button"
+              className="flex items-center mb-2 p-2 rounded bg-white/5 hover:bg-white/10 transition-colors cursor-pointer group/white w-full text-left"
+              onClick={() => {
+                if (!bracket.whitePlayer) {
+                  setSelectedPosition(positionId);
+                  setSelectedSide("white");
+                }
+              }}
+            >
+              <div className="w-3 h-3 bg-white rounded mr-3 border border-white/70 shrink-0"></div>
+              {bracket.whitePlayer ? (
+                <div className="flex items-center gap-2 flex-1 min-w-0">
+                  <ModelIcon
+                    modelId={bracket.whitePlayer.modelId}
+                    allModels={allModels}
+                    size="xs"
+                  />
+                  <div className="text-xs font-mono font-medium text-white truncate">
                     {bracket.whitePlayer.name}
                   </div>
-                ) : (
-                  <button
-                    type="button"
-                    className="text-xs text-gray-400 hover:text-white cursor-pointer"
-                    onClick={() => {
-                      setSelectedPosition(positionId);
-                      setSelectedSide("white");
-                    }}
-                  >
-                    + White
-                  </button>
-                )}
-              </div>
-            </div>
+                </div>
+              ) : (
+                <div className="text-xs text-white/60 group-hover/white:text-white font-mono">
+                  + Add White Player
+                </div>
+              )}
+            </button>
 
             {/* Black Player */}
-            <div className="flex items-center">
-              <div className="w-3 h-3 bg-black rounded-sm mr-2 border border-gray-400"></div>
-              <div className="flex-1 min-w-0">
-                {bracket.blackPlayer ? (
-                  <div className="text-xs font-bold text-white truncate">
+            <button
+              type="button"
+              className="flex items-center p-2 rounded bg-gray-900/30 hover:bg-gray-800/40 transition-colors cursor-pointer group/black w-full text-left"
+              onClick={() => {
+                if (!bracket.blackPlayer) {
+                  setSelectedPosition(positionId);
+                  setSelectedSide("black");
+                }
+              }}
+            >
+              <div className="w-3 h-3 bg-gray-800 rounded mr-3 border border-white/50 shrink-0"></div>
+              {bracket.blackPlayer ? (
+                <div className="flex items-center gap-2 flex-1 min-w-0">
+                  <ModelIcon
+                    modelId={bracket.blackPlayer.modelId}
+                    allModels={allModels}
+                    size="xs"
+                  />
+                  <div className="text-xs font-mono font-medium text-white truncate">
                     {bracket.blackPlayer.name}
                   </div>
-                ) : (
-                  <button
-                    type="button"
-                    className="text-xs text-gray-400 hover:text-white cursor-pointer"
-                    onClick={() => {
-                      setSelectedPosition(positionId);
-                      setSelectedSide("black");
-                    }}
-                  >
-                    + Black
-                  </button>
-                )}
-              </div>
-            </div>
+                </div>
+              ) : (
+                <div className="text-xs text-white/60 group-hover/black:text-white font-mono">
+                  + Add Black Player
+                </div>
+              )}
+            </button>
           </div>
-          <Button
-            size="sm"
-            variant="outline"
-            className="absolute -top-1 -right-1 w-5 h-5 p-0 opacity-0 group-hover:opacity-100 transition-opacity bg-yellow-500 hover:bg-yellow-400 border-yellow-400 text-black"
+
+          {/* Shuffle/Random Button */}
+          <button
+            type="button"
+            className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-primary/90 hover:bg-primary text-black text-xs opacity-0 group-hover:opacity-100 transition-all duration-200 flex items-center justify-center shadow-lg border border-primary/20"
             onClick={() => handleSwapPlayer(bracket.round, bracket.position)}
+            title="Random players"
           >
-            🔄
-          </Button>
+            <DiceIcon className="w-3 h-3" />
+          </button>
         </div>
       );
     }
 
     return (
-      <div className="w-40 h-20 border-2 border-dashed border-gray-500 hover:border-gray-300 hover:bg-gray-700/50 rounded-md flex flex-col p-2 transition-all cursor-pointer">
+      <div className="w-60 h-24 border-2 border-dashed border-white/20 hover:border-primary/50 hover:bg-primary/5 rounded-lg flex flex-col p-3 transition-all cursor-pointer group">
         {/* White Player Selection */}
-        <div className="flex items-center mb-1">
-          <div className="w-3 h-3 bg-white rounded-sm mr-2 border border-gray-400"></div>
-          <button
-            type="button"
-            className="text-xs text-gray-400 hover:text-white flex-1 text-left"
-            onClick={() => {
-              setSelectedPosition(positionId);
-              setSelectedSide("white");
-            }}
-          >
-            + White
-          </button>
-        </div>
+        <button
+          type="button"
+          className="flex items-center mb-2 p-2 rounded hover:bg-white/5 transition-colors cursor-pointer group/white w-full text-left"
+          onClick={() => {
+            setSelectedPosition(positionId);
+            setSelectedSide("white");
+          }}
+        >
+          <div className="w-3 h-3 bg-white rounded mr-3 border border-white/50 shrink-0"></div>
+          <div className="text-xs text-white/50 group-hover/white:text-white/80 font-mono">
+            + Add White Player
+          </div>
+        </button>
 
         {/* Black Player Selection */}
-        <div className="flex items-center">
-          <div className="w-3 h-3 bg-black rounded-sm mr-2 border border-gray-400"></div>
-          <button
-            type="button"
-            className="text-xs text-gray-400 hover:text-white flex-1 text-left"
-            onClick={() => {
-              setSelectedPosition(positionId);
-              setSelectedSide("black");
-            }}
-          >
-            + Black
-          </button>
-        </div>
+        <button
+          type="button"
+          className="flex items-center p-2 rounded hover:bg-gray-900/20 transition-colors cursor-pointer group/black w-full text-left"
+          onClick={() => {
+            setSelectedPosition(positionId);
+            setSelectedSide("black");
+          }}
+        >
+          <div className="w-3 h-3 bg-gray-800 rounded mr-3 border border-white/30 shrink-0"></div>
+          <div className="text-xs text-white/50 group-hover/black:text-white/80 font-mono">
+            + Add Black Player
+          </div>
+        </button>
       </div>
     );
   };
@@ -409,65 +558,154 @@ export default function TournamentsPage() {
       roundsData.push(brackets.filter((b) => b.round === round));
     }
 
+    const completedMatches = brackets.filter(
+      (b) => b.round === 0 && b.whitePlayer && b.blackPlayer,
+    ).length;
+    const totalMatches = brackets.filter((b) => b.round === 0).length;
+
     return (
-      <div className="w-full max-w-7xl mx-auto p-6 overflow-x-auto">
-        <div className="flex items-center justify-center gap-8 min-w-fit">
-          {roundsData.map((roundBrackets, roundIndex) => (
-            <div
-              key={`round-${
-                // biome-ignore lint/suspicious/noArrayIndexKey: necessary man
-                roundIndex
-              }`}
-              className="flex flex-col items-center"
-            >
-              {/* Round Header */}
-              <div className="text-center mb-4">
-                <h3 className="text-yellow-400 font-mono text-xs font-bold whitespace-nowrap">
-                  {getRoundLabel(roundIndex, rounds)}
-                </h3>
-                <div className="text-yellow-600 font-mono text-xs mt-1">
-                  {roundBrackets.length}{" "}
-                  {roundBrackets.length === 1 ? "Match" : "Matches"}
-                </div>
-              </div>
-
-              {/* Round Matches */}
-              <div className="flex flex-col gap-3">
-                {roundBrackets.map((bracket) => (
-                  <PlayerSlot
-                    key={`${bracket.round}-${bracket.position}`}
-                    bracket={bracket}
-                  />
-                ))}
-              </div>
-
-              {/* Connector to next round */}
-              {roundIndex < rounds - 1 && (
-                <div className="flex items-center justify-center mt-4 ml-8 mr-8">
-                  <div className="w-8 h-px bg-yellow-600/60"></div>
-                  <div className="w-0 h-0 border-l-4 border-l-yellow-600/60 border-t-2 border-t-transparent border-b-2 border-b-transparent ml-1"></div>
-                </div>
-              )}
+      <div className="p-4 sm:p-6">
+        {/* Tournament Progress Bar */}
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-2">
+            <div className="text-sm font-mono text-terminal-text">
+              Tournament Progress
             </div>
-          ))}
+            <div className="text-xs font-mono text-primary">
+              {completedMatches}/{totalMatches} matches
+            </div>
+          </div>
+          <div className="w-full bg-black/40 rounded-full h-2">
+            <div
+              className="bg-primary h-2 rounded-full transition-all duration-500"
+              style={{ width: `${(completedMatches / totalMatches) * 100}%` }}
+            />
+          </div>
         </div>
 
-        {/* Tournament Summary */}
-        <div className="mt-8 text-center">
-          <div className="text-yellow-600 font-mono text-sm">
-            {tournamentSize} Players • {rounds} Rounds •{" "}
-            {
-              brackets.filter(
-                (b) => b.round === 0 && b.whitePlayer && b.blackPlayer,
-              ).length
-            }
-            /{brackets.filter((b) => b.round === 0).length} Matches Complete
+        {/* Round Headers - Fixed Width */}
+        <div className="mb-6 overflow-x-auto">
+          <div className="flex min-w-max">
+            {roundsData.map((roundBrackets, roundIndex) => (
+              <div
+                key={`header-round-${roundIndex}-${roundBrackets.length}`}
+                className="text-center px-4 flex-shrink-0"
+                style={{ width: "280px" }}
+              >
+                <div className="bg-primary/10 border border-primary/30 rounded-lg py-3 px-4">
+                  <h3 className="text-primary font-mono text-sm font-bold">
+                    {getRoundLabel(roundIndex, rounds)}
+                  </h3>
+                  <div className="text-white/50 font-mono text-xs mt-1">
+                    {roundBrackets.length}{" "}
+                    {roundBrackets.length === 1 ? "match" : "matches"}
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
-          <div className="text-yellow-500/60 font-mono text-xs mt-2">
-            Round breakdown:{" "}
-            {roundsData
-              .map((round, i) => `R${i + 1}: ${round.length}`)
-              .join(" • ")}
+        </div>
+
+        {/* Bracket Grid with Fixed Layout */}
+        <div className="overflow-x-auto">
+          <div
+            className="flex items-center min-w-max pb-4"
+            style={{ minHeight: `${Math.max(4, tournamentSize / 2) * 96}px` }}
+          >
+            {roundsData.map((roundBrackets, roundIndex) => (
+              <div
+                key={`round-${roundIndex}-${roundBrackets.length}`}
+                className="flex flex-col justify-center items-center relative flex-shrink-0"
+                style={{ width: "280px" }}
+              >
+                <div
+                  className="flex flex-col justify-around items-center h-full w-full"
+                  style={{
+                    minHeight: `${Math.max(4, roundBrackets.length) * 96 + (roundBrackets.length - 1) * 32}px`,
+                  }}
+                >
+                  {roundBrackets.map((bracket, bracketIndex) => (
+                    <div
+                      key={`${bracket.round}-${bracket.position}`}
+                      className="relative flex items-center justify-center"
+                      style={{
+                        marginBottom:
+                          bracketIndex < roundBrackets.length - 1
+                            ? `${2 ** (roundIndex + 1) * 32}px`
+                            : "0px",
+                      }}
+                    >
+                      <PlayerSlot bracket={bracket} />
+
+                      {/* Bracket Lines to Next Round */}
+                      {roundIndex < rounds - 1 && bracket.isSelectable && (
+                        <div className="absolute right-0 top-1/2 transform -translate-y-1/2">
+                          {/* Horizontal line from match to center */}
+                          <div className="w-10 h-px bg-primary/40 absolute right-0 top-0"></div>
+
+                          {/* Vertical connector line */}
+                          {bracketIndex % 2 === 0 ? (
+                            // Top match of pair - line goes down
+                            <div
+                              className="w-px bg-primary/40 absolute right-10 top-0"
+                              style={{
+                                height: `${2 ** (roundIndex + 1) * 48 + 16}px`,
+                              }}
+                            />
+                          ) : (
+                            // Bottom match of pair - line goes up
+                            <div
+                              className="w-px bg-primary/40 absolute right-10 bottom-0"
+                              style={{
+                                height: `${2 ** (roundIndex + 1) * 48 + 16}px`,
+                              }}
+                            />
+                          )}
+
+                          {/* Horizontal line to next round */}
+                          {bracketIndex % 2 === 1 && (
+                            <div
+                              className="w-10 h-px bg-primary/40 absolute right-10"
+                              style={{
+                                top: `${-(2 ** (roundIndex + 1) * 48 + 16)}px`,
+                              }}
+                            />
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Tournament Stats */}
+        <div className="mt-8 grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
+          <div className="p-3 bg-black/20 rounded-lg border border-white/10">
+            <div className="text-primary font-mono text-lg font-bold">
+              {tournamentSize}
+            </div>
+            <div className="text-white/60 text-xs font-mono">PLAYERS</div>
+          </div>
+          <div className="p-3 bg-black/20 rounded-lg border border-white/10">
+            <div className="text-primary font-mono text-lg font-bold">
+              {rounds}
+            </div>
+            <div className="text-white/60 text-xs font-mono">ROUNDS</div>
+          </div>
+          <div className="p-3 bg-black/20 rounded-lg border border-white/10">
+            <div className="text-primary font-mono text-lg font-bold">
+              {completedMatches}
+            </div>
+            <div className="text-white/60 text-xs font-mono">COMPLETED</div>
+          </div>
+          <div className="p-3 bg-black/20 rounded-lg border border-white/10">
+            <div className="text-primary font-mono text-lg font-bold">
+              {totalMatches - completedMatches}
+            </div>
+            <div className="text-white/60 text-xs font-mono">PENDING</div>
           </div>
         </div>
       </div>
@@ -475,124 +713,180 @@ export default function TournamentsPage() {
   };
 
   return (
-    <div className="min-h-screen terminal-card crt-flicker">
-      <Navbar />
-
+    <div className="min-h-screen bg-background crt-flicker">
       {/* Header */}
-      <div className="max-w-6xl mx-auto px-6 py-8">
-        <div className="text-center">
-          <div className="inline-block p-6 rounded-full bg-gradient-to-r from-terminal-accent/20 to-terminal-accent/10 border border-terminal-accent/30 mb-4">
-            <div className="w-16 h-16 bg-gradient-to-r from-terminal-accent/30 to-terminal-accent/20 rounded-full flex items-center justify-center border border-terminal-accent/50">
-              <span className="text-2xl">⚡</span>
+      <div className="max-w-7xl mx-auto px-6 py-12">
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center gap-3 mb-6">
+            <div className="w-12 h-12 rounded-lg bg-primary/20 border border-primary/30 flex items-center justify-center">
+              <svg
+                width="24"
+                height="24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                className="text-foreground"
+              >
+                <title>Tournament Icon</title>
+                <path
+                  d="M16 3H6v2H2v10h6V5h8v10h6V5h-4V3h-2zm4 4v6h-2V7h2zM6 13H4V7h2v6zm12 2H6v2h12v-2zm-7 2h2v2h3v2H8v-2h3v-2z"
+                  fill="currentColor"
+                />
+              </svg>
+            </div>
+            <div>
+              <h1 className="terminal-text terminal-glow text-4xl font-bold">
+                TOURNAMENTS
+              </h1>
             </div>
           </div>
-          <h1 className="terminal-text terminal-glow text-4xl font-mono mb-2">
-            CHESS BATTLE
-          </h1>
-          <h2 className="terminal-text text-2xl font-mono mb-4">
-            AI TOURNAMENT
-          </h2>
-          <p className="terminal-text opacity-80">
-            Select your AI warriors for the ultimate chess battle
+          <p className="terminal-text text-lg opacity-90 max-w-2xl mx-auto">
+            Organize epic AI chess tournaments with bracket elimination
+            <br />
+            <span className="text-primary">Setup matches</span> •{" "}
+            <span className="text-primary">Track progress</span> •{" "}
+            <span className="text-primary">Crown champions</span>
           </p>
         </div>
-      </div>
 
-      {/* Tournament Size Selector */}
-      <div className="max-w-6xl mx-auto px-6 mb-8">
-        <div className="flex justify-center gap-4">
-          {([4, 8, 16, 32] as TournamentSize[]).map((size) => (
-            <Button
-              key={size}
-              variant={tournamentSize === size ? "default" : "outline"}
-              className={`terminal-text font-mono ${
-                tournamentSize === size
-                  ? "bg-terminal-accent hover:bg-terminal-accent/80 text-black"
-                  : "border-terminal-accent text-terminal-accent hover:bg-terminal-accent/10"
-              }`}
-              onClick={() => setTournamentSize(size)}
-            >
-              {size} Players
-            </Button>
-          ))}
+        {/* Tournament Configuration Card */}
+        <div className="terminal-card terminal-border mb-8">
+          <div className="p-6">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h3 className="terminal-text terminal-glow text-lg font-mono">
+                  ⚙️ CONFIGURATION
+                </h3>
+                <p className="terminal-text text-sm opacity-70 mt-1">
+                  Choose tournament size and setup matches
+                </p>
+              </div>
+              <div className="flex items-center gap-2 text-xs terminal-text opacity-60">
+                <span>Rounds: {Math.log2(tournamentSize)}</span>
+                <span>•</span>
+                <span>Matches: {tournamentSize / 2}</span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+              {([4, 8, 16, 32] as TournamentSize[]).map((size) => (
+                <button
+                  type="button"
+                  key={size}
+                  onClick={() => setTournamentSize(size)}
+                  className={`p-4 rounded-lg border transition-all duration-200 ${
+                    tournamentSize === size
+                      ? "bg-primary/20 border-primary/50 text-primary"
+                      : "border-white/20 text-terminal-text hover:border-primary/30 hover:bg-primary/10"
+                  }`}
+                >
+                  <div className="font-mono text-lg font-bold">{size}</div>
+                  <div className="text-xs opacity-70">PLAYERS</div>
+                </button>
+              ))}
+            </div>
+
+            {/* Tournament Controls */}
+            <div className="flex flex-wrap gap-3 justify-center">
+              <button
+                type="button"
+                onClick={handlePopulateRandom}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-green-900/30 border border-green-600/50 text-green-400 hover:bg-green-900/50 transition-colors font-mono text-sm"
+              >
+                <DiceIcon className="w-4 h-4" />
+                Fill Empty
+              </button>
+              <button
+                type="button"
+                onClick={handleShuffleAll}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-purple-900/30 border border-purple-600/50 text-purple-400 hover:bg-purple-900/50 transition-colors font-mono text-sm"
+              >
+                <span>🔀</span>
+                Shuffle All
+              </button>
+              <button
+                type="button"
+                onClick={() =>
+                  setBrackets((prev) =>
+                    prev.map((b) => ({
+                      ...b,
+                      whitePlayer: undefined,
+                      blackPlayer: undefined,
+                    })),
+                  )
+                }
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-red-900/30 border border-red-600/50 text-red-400 hover:bg-red-900/50 transition-colors font-mono text-sm"
+              >
+                <span>🗑️</span>
+                Clear All
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Tournament Bracket */}
-      <div className="max-w-6xl mx-auto px-6 mb-8">
+      <div className="max-w-7xl mx-auto px-6 mb-8">
         <div className="terminal-card terminal-border">{renderBracket()}</div>
       </div>
 
-      {/* Controls */}
-      <div className="max-w-6xl mx-auto px-6 mb-8">
-        <div className="flex justify-center gap-4">
-          <Button
-            className="terminal-text font-mono bg-green-700 hover:bg-green-600 text-white border border-green-600/50"
-            onClick={handlePopulateRandom}
-          >
-            🎲 Populate Random
-          </Button>
-          <Button
-            className="terminal-text font-mono bg-purple-700 hover:bg-purple-600 text-white border border-purple-600/50"
-            onClick={handleShuffleAll}
-          >
-            🔀 Shuffle All
-          </Button>
-          <Button
-            className="terminal-text font-mono bg-red-700 hover:bg-red-600 text-white border border-red-600/50"
-            onClick={() =>
-              setBrackets((prev) =>
-                prev.map((b) => ({
-                  ...b,
-                  whitePlayer: undefined,
-                  blackPlayer: undefined,
-                })),
-              )
-            }
-          >
-            🗑️ Clear All
-          </Button>
-        </div>
-      </div>
-
-      {/* Start Tournament Button */}
+      {/* Start Tournament Section */}
       {brackets
         .filter((b) => b.round === 0)
         .every((b) => b.whitePlayer && b.blackPlayer) && (
-        <div className="max-w-6xl mx-auto px-6 mb-8">
-          <div className="flex justify-center">
-            <form action={formAction}>
-              {(() => {
-                const tournamentData = getTournamentData();
-                return (
-                  <>
-                    <input
-                      type="hidden"
-                      name="tournamentName"
-                      value={tournamentData.tournamentName}
-                    />
-                    <input
-                      type="hidden"
-                      name="tournamentSize"
-                      value={tournamentData.tournamentSize}
-                    />
-                    <input
-                      type="hidden"
-                      name="matches"
-                      value={tournamentData.matches}
-                    />
-                  </>
-                );
-              })()}
-              <Button
-                type="submit"
-                size="lg"
-                className="terminal-text font-mono bg-gradient-to-r from-terminal-accent to-terminal-accent/80 hover:from-terminal-accent/80 hover:to-terminal-accent/60 text-black font-bold px-8 py-3 text-lg shadow-lg disabled:opacity-50 disabled:cursor-not-allowed border border-terminal-accent/50"
-                disabled={isPending}
-              >
-                {isPending ? "🔄 STARTING..." : "⚔️ START TOURNAMENT"}
-              </Button>
-            </form>
+        <div className="max-w-7xl mx-auto px-6 mb-8">
+          <div className="terminal-card terminal-border">
+            <div className="p-6 text-center">
+              <div className="mb-4">
+                <h3 className="terminal-text terminal-glow text-lg font-mono mb-2">
+                  🚀 READY TO LAUNCH
+                </h3>
+                <p className="terminal-text text-sm opacity-70">
+                  All matches configured. Start the tournament to begin battles!
+                </p>
+              </div>
+              <form action={formAction}>
+                {(() => {
+                  const tournamentData = getTournamentData();
+                  return (
+                    <>
+                      <input
+                        type="hidden"
+                        name="tournamentName"
+                        value={tournamentData.tournamentName}
+                      />
+                      <input
+                        type="hidden"
+                        name="tournamentSize"
+                        value={tournamentData.tournamentSize}
+                      />
+                      <input
+                        type="hidden"
+                        name="matches"
+                        value={tournamentData.matches}
+                      />
+                    </>
+                  );
+                })()}
+                <button
+                  type="submit"
+                  disabled={isPending}
+                  className="inline-flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-black font-bold text-lg rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed border border-primary/50 shadow-lg shadow-primary/20"
+                >
+                  {isPending ? (
+                    <>
+                      <span className="animate-spin">🔄</span>
+                      STARTING...
+                    </>
+                  ) : (
+                    <>
+                      <span>⚔️</span>
+                      START TOURNAMENT
+                    </>
+                  )}
+                </button>
+              </form>
+            </div>
           </div>
         </div>
       )}
@@ -610,48 +904,226 @@ export default function TournamentsPage() {
         </div>
       )}
 
-      {/* Model Selection */}
+      {/* Model Selection - Responsive Dialog/Drawer */}
       {selectedPosition && selectedSide && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="terminal-card terminal-border p-6 max-w-md w-full mx-4">
-            <div className="flex items-center gap-3 mb-4">
-              <div
-                className={`w-4 h-4 rounded-sm border border-gray-400 ${
-                  selectedSide === "white" ? "bg-white" : "bg-black"
-                }`}
-              ></div>
-              <h3 className="terminal-text terminal-glow font-mono text-lg">
-                Select {selectedSide === "white" ? "White" : "Black"} Player
-              </h3>
-            </div>
-            <ModelSelect
-              label={`Choose your ${selectedSide} AI warrior`}
-              items={mockModelOptions.filter(
-                (model) =>
-                  !brackets.some(
-                    (bracket) =>
-                      bracket.whitePlayer?.modelId === model.canonical_id ||
-                      bracket.blackPlayer?.modelId === model.canonical_id,
-                  ),
-              )}
-              value=""
-              onChange={handlePlayerSelect}
-              placeholder="Select a model..."
-            />
-            <div className="flex gap-2 mt-4">
-              <Button
-                variant="outline"
-                className="flex-1 border-terminal-accent/50 text-terminal-accent hover:bg-terminal-accent/10 terminal-text font-mono"
-                onClick={() => {
-                  setSelectedPosition(null);
-                  setSelectedSide(null);
-                }}
-              >
-                Cancel
-              </Button>
-            </div>
-          </div>
-        </div>
+        <>
+          {/* Desktop Dialog */}
+          <Dialog
+            open={
+              !isMobile && selectedPosition !== null && selectedSide !== null
+            }
+            onOpenChange={(open) => {
+              if (!open) {
+                setSelectedPosition(null);
+                setSelectedSide(null);
+              }
+            }}
+          >
+            <DialogContent className="terminal-card terminal-border max-w-md">
+              <DialogHeader>
+                <div className="flex items-center gap-3 mb-4">
+                  <div
+                    className={`w-4 h-4 rounded border-2 ${
+                      selectedSide === "white"
+                        ? "bg-white border-white"
+                        : "bg-gray-800 border-white/50"
+                    }`}
+                  />
+                  <div className="text-left">
+                    <DialogTitle className="terminal-text terminal-glow font-mono text-lg">
+                      SELECT PLAYER
+                    </DialogTitle>
+                    <p className="terminal-text text-sm opacity-60 mt-1">
+                      Choose {selectedSide} side AI model
+                    </p>
+                  </div>
+                </div>
+              </DialogHeader>
+
+              <ModelSelect
+                label="Available Models"
+                items={
+                  allModels && allModels.length > 0
+                    ? allModels.filter(
+                        (model) =>
+                          !brackets.some(
+                            (bracket) =>
+                              bracket.whitePlayer?.modelId ===
+                                model.canonical_id ||
+                              bracket.blackPlayer?.modelId ===
+                                model.canonical_id,
+                          ),
+                      )
+                    : mockModelOptions.filter(
+                        (model) =>
+                          !brackets.some(
+                            (bracket) =>
+                              bracket.whitePlayer?.modelId ===
+                                model.canonical_id ||
+                              bracket.blackPlayer?.modelId ===
+                                model.canonical_id,
+                          ),
+                      )
+                }
+                value=""
+                onChange={handlePlayerSelect}
+                placeholder="Search and select model..."
+              />
+
+              <div className="flex gap-3 mt-6">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedPosition(null);
+                    setSelectedSide(null);
+                  }}
+                  className="flex-1 px-4 py-3 border border-white/20 text-white/70 hover:text-white hover:border-white/40 rounded-lg transition-colors font-mono text-sm"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    // Random selection from available models
+                    const modelsToUse =
+                      allModels && allModels.length > 0
+                        ? allModels
+                        : mockModelOptions;
+                    const available = modelsToUse.filter(
+                      (model) =>
+                        !brackets.some(
+                          (bracket) =>
+                            bracket.whitePlayer?.modelId ===
+                              model.canonical_id ||
+                            bracket.blackPlayer?.modelId === model.canonical_id,
+                        ),
+                    );
+                    if (available.length > 0) {
+                      const randomModel =
+                        available[Math.floor(Math.random() * available.length)];
+                      handlePlayerSelect(randomModel.canonical_id);
+                    }
+                  }}
+                  className="flex-1 px-4 py-3 bg-primary/20 border border-primary/50 text-primary hover:bg-primary/30 rounded-lg transition-colors font-mono text-sm inline-flex items-center justify-center gap-2"
+                >
+                  <DiceIcon className="!text-foreground w-4 h-4" />
+                  Random
+                </button>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          {/* Mobile Drawer */}
+          <Drawer
+            open={
+              isMobile && selectedPosition !== null && selectedSide !== null
+            }
+            onOpenChange={(open) => {
+              if (!open) {
+                setSelectedPosition(null);
+                setSelectedSide(null);
+              }
+            }}
+          >
+            <DrawerContent className="terminal-card">
+              <DrawerHeader>
+                <div className="flex items-center justify-center gap-3 mb-4">
+                  <div
+                    className={`w-4 h-4 rounded border-2 ${
+                      selectedSide === "white"
+                        ? "bg-white border-white"
+                        : "bg-gray-800 border-white/50"
+                    }`}
+                  />
+                  <div className="text-center">
+                    <DrawerTitle className="terminal-text terminal-glow font-mono text-lg">
+                      SELECT PLAYER
+                    </DrawerTitle>
+                    <p className="terminal-text text-sm opacity-60 mt-1">
+                      Choose {selectedSide} side AI model
+                    </p>
+                  </div>
+                </div>
+              </DrawerHeader>
+
+              <div className="px-4 pb-6">
+                <ModelSelect
+                  label="Available Models"
+                  items={
+                    allModels && allModels.length > 0
+                      ? allModels.filter(
+                          (model) =>
+                            !brackets.some(
+                              (bracket) =>
+                                bracket.whitePlayer?.modelId ===
+                                  model.canonical_id ||
+                                bracket.blackPlayer?.modelId ===
+                                  model.canonical_id,
+                            ),
+                        )
+                      : mockModelOptions.filter(
+                          (model) =>
+                            !brackets.some(
+                              (bracket) =>
+                                bracket.whitePlayer?.modelId ===
+                                  model.canonical_id ||
+                                bracket.blackPlayer?.modelId ===
+                                  model.canonical_id,
+                            ),
+                        )
+                  }
+                  value=""
+                  onChange={handlePlayerSelect}
+                  placeholder="Search and select model..."
+                />
+
+                <div className="flex gap-3 mt-6">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedPosition(null);
+                      setSelectedSide(null);
+                    }}
+                    className="flex-1 px-4 py-3 border border-white/20 text-white/70 hover:text-white hover:border-white/40 rounded-lg transition-colors font-mono text-sm"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      // Random selection from available models
+                      const modelsToUse =
+                        allModels && allModels.length > 0
+                          ? allModels
+                          : mockModelOptions;
+                      const available = modelsToUse.filter(
+                        (model) =>
+                          !brackets.some(
+                            (bracket) =>
+                              bracket.whitePlayer?.modelId ===
+                                model.canonical_id ||
+                              bracket.blackPlayer?.modelId ===
+                                model.canonical_id,
+                          ),
+                      );
+                      if (available.length > 0) {
+                        const randomModel =
+                          available[
+                            Math.floor(Math.random() * available.length)
+                          ];
+                        handlePlayerSelect(randomModel.canonical_id);
+                      }
+                    }}
+                    className="flex-1 px-4 py-3 bg-primary/20 border border-primary/50 text-primary hover:bg-primary/30 rounded-lg transition-colors font-mono text-sm inline-flex items-center justify-center gap-2"
+                  >
+                    <DiceIcon className="w-4 h-4" />
+                    Random
+                  </button>
+                </div>
+              </div>
+            </DrawerContent>
+          </Drawer>
+        </>
       )}
 
       <div className="h-8" />

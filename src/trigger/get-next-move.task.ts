@@ -1,3 +1,4 @@
+import { Polar } from "@polar-sh/sdk";
 import { logger, schemaTask } from "@trigger.dev/sdk";
 import {
   type GenerateObjectResult,
@@ -8,6 +9,15 @@ import { Chess } from "chess.js";
 import { z } from "zod";
 
 import { MOCK_RESPONSE, MOCK_RESPONSE_REASONING } from "@/lib/mock-responses";
+
+if (!process.env.POLAR_ACCESS_TOKEN) {
+  throw new Error("POLAR_ACCESS_TOKEN is not set");
+}
+
+const polar = new Polar({
+  accessToken: process.env.POLAR_ACCESS_TOKEN,
+  server: process.env.NODE_ENV === "development" ? "sandbox" : "production",
+});
 
 const schema = z.object({
   move: z
@@ -38,6 +48,7 @@ export const GetNextMoveTask = schemaTask({
     whitePlayerModelId: z.string(),
     blackPlayerModelId: z.string(),
     lastInvalidMoves: z.array(z.string()),
+    userId: z.string(),
   }),
   run: async (payload) => {
     const chess = new Chess(payload.board);
@@ -46,6 +57,8 @@ export const GetNextMoveTask = schemaTask({
       chess.turn() === "w"
         ? payload.whitePlayerModelId
         : payload.blackPlayerModelId;
+
+    // TODO: validate if the user has enough credits to make the move
 
     const initialTime = Date.now();
 
@@ -95,6 +108,20 @@ export const GetNextMoveTask = schemaTask({
     }
 
     logger.info(`Raw response: ${rawResponse}`);
+
+    logger.info(`ModelID: ${result.response.modelId}`);
+
+    await polar.events.ingest({
+      events: [
+        {
+          name: "move_generated",
+          externalCustomerId: payload.userId,
+          metadata: {
+            move: "PRIME", // TODO: logic to determine if the move is prime, pro or lite based on model cost
+          },
+        },
+      ],
+    });
 
     return {
       responseTime,
@@ -209,7 +236,9 @@ ${chess.ascii()}
 
 📊 GAME STATE:
 • FEN: ${chess.fen()}
-• Status: ${isCheck ? "⚠️  IN CHECK" : ""}${isCheckmate ? "🏁 CHECKMATE" : ""}${isStalemate ? "🔄 STALEMATE" : ""}${isDraw ? "🤝 DRAW" : ""}
+• Status: ${isCheck ? "⚠️  IN CHECK" : ""}${isCheckmate ? "🏁 CHECKMATE" : ""}${
+        isStalemate ? "🔄 STALEMATE" : ""
+      }${isDraw ? "🤝 DRAW" : ""}
 • Recent moves: ${recentMoves || "Game start"}
 • Legal moves available: ${validMoves.length}
 

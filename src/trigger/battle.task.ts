@@ -161,6 +161,7 @@ export const BattleTask = schemaTask({
                   whitePlayerModelId: battle.whitePlayer.model_id,
                   blackPlayerModelId: battle.blackPlayer.model_id,
                   lastInvalidMoves,
+                  userId: payload.userId,
                 },
                 {
                   maxDuration: battleTimeout.timeout_ms / 1000,
@@ -199,7 +200,9 @@ export const BattleTask = schemaTask({
             chess.move(moveAttempt);
 
             logger.info(
-              `✅ ${currentPlayer} (${currentPlayerModelId}) Move ${moveNumber}: ${moveAttempt} - Position: ${chess.fen().split(" ")[0]}`,
+              `✅ ${currentPlayer} (${currentPlayerModelId}) Move ${moveNumber}: ${moveAttempt} - Position: ${
+                chess.fen().split(" ")[0]
+              }`,
             );
 
             // Clear invalid moves on successful move
@@ -273,7 +276,11 @@ export const BattleTask = schemaTask({
         // Handle too many invalid moves with fallback strategy
         if (lastInvalidMoves.length >= CONFIG.MAX_INVALID_MOVES) {
           logger.warn(
-            `🤖 ${currentPlayer} (${currentPlayerModelId}) exceeded ${CONFIG.MAX_INVALID_MOVES} invalid moves: [${lastInvalidMoves.join(", ")}]. Making random move as fallback.`,
+            `🤖 ${currentPlayer} (${currentPlayerModelId}) exceeded ${
+              CONFIG.MAX_INVALID_MOVES
+            } invalid moves: [${lastInvalidMoves.join(
+              ", ",
+            )}]. Making random move as fallback.`,
           );
 
           const availableMoves = chess.moves();
@@ -287,7 +294,9 @@ export const BattleTask = schemaTask({
           chess.move(randomMove);
 
           logger.info(
-            `🎲 ${currentPlayer} (${currentPlayerModelId}) Random fallback: ${randomMove} - Position: ${chess.fen().split(" ")[0]}`,
+            `🎲 ${currentPlayer} (${currentPlayerModelId}) Random fallback: ${randomMove} - Position: ${
+              chess.fen().split(" ")[0]
+            }`,
           );
 
           // Store the random move
@@ -473,7 +482,9 @@ export const BattleTask = schemaTask({
     });
 
     logger.info(
-      `🏁 Battle completed: ${outcome === "win" ? "Decisive result" : "Draw"} - ${
+      `🏁 Battle completed: ${
+        outcome === "win" ? "Decisive result" : "Draw"
+      } - ${
         winner
           ? `${winnerColor === "white" ? "White" : "Black"} (${
               winnerColor === "white"
@@ -623,7 +634,11 @@ async function determineWinnerByTimeEfficiency(
           winnerColor === "white"
             ? battle.whitePlayer.model_id
             : battle.blackPlayer.model_id
-        }) wins by ${context === "timeout" ? "time efficiency" : "faster average response time"} (${
+        }) wins by ${
+          context === "timeout"
+            ? "time efficiency"
+            : "faster average response time"
+        } (${
           winnerColor === "white"
             ? avgResponseTimeWhite.toFixed(0)
             : avgResponseTimeBlack.toFixed(0)

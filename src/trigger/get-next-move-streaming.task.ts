@@ -235,16 +235,10 @@ export const GetNextMoveStreamingTask = schemaTask({
       logger.info(`🔍 Simulating streaming AI response for ${playerModelId}`);
       result = await simulateStreamingAIResponse(chess, playerModelId);
 
-      // Set up the onFinish callback to capture usage (simulation)
-      if (result.onFinish) {
-        result.onFinish(
-          (event: {
-            usage?: { inputTokens?: number; outputTokens?: number };
-          }) => {
-            tokensIn = event.usage?.inputTokens ?? null;
-            tokensOut = event.usage?.outputTokens ?? null;
-          },
-        );
+      // In simulation mode, set token usage immediately since we know the values
+      if (result.usage) {
+        tokensIn = result.usage.inputTokens;
+        tokensOut = result.usage.outputTokens;
       }
     } else {
       // Stream the model's response

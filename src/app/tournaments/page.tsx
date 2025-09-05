@@ -6,7 +6,6 @@ import { useActionState, useEffect, useState } from "react";
 import { MODELS } from "@/lib/models";
 
 import { type ModelOption, ModelSelect } from "@/components/model-select";
-import { Navbar } from "@/components/navbar";
 import { Button } from "@/components/ui/button";
 
 import {
@@ -475,9 +474,7 @@ export default function TournamentsPage() {
   };
 
   return (
-    <div className="min-h-screen terminal-card crt-flicker">
-      <Navbar />
-
+    <div className="min-h-screen bg-background crt-flicker">
       {/* Header */}
       <div className="max-w-6xl mx-auto px-6 py-8">
         <div className="text-center">

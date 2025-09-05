@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 
 import useSWR from "swr";
 
-import { Navbar } from "@/components/navbar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -65,8 +64,7 @@ export default function LeaderboardPage() {
   }, [data, rows.length]);
 
   return (
-    <div className="min-h-screen terminal-card crt-flicker">
-      <Navbar />
+    <div className="min-h-screen bg-background crt-flicker">
       <div className="max-w-6xl mx-auto px-6 py-8 space-y-8">
         <Card className="terminal-card terminal-border">
           <CardHeader>

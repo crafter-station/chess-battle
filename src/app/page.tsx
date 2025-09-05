@@ -14,7 +14,6 @@ import {
 
 import { formatDate } from "@/lib/utils";
 
-import { Navbar } from "@/components/navbar";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -85,7 +84,7 @@ function ClientContentInternal() {
   return (
     <>
       {/* Tournaments Section */}
-      <div className="terminal-card terminal-border">
+      <div className="bg-background">
         <CardHeader>
           <CardTitle className="terminal-text terminal-glow text-xl font-mono flex items-center justify-between">
             <span>&gt; TOURNAMENTS</span>
@@ -509,9 +508,7 @@ const BattleSetup = dynamic(() => import("./battle-setup"), {
 
 export default function Page() {
   return (
-    <div className="min-h-screen terminal-card crt-flicker">
-      <Navbar />
-
+    <div className="min-h-screen bg-background crt-flicker">
       {/* Welcome Header */}
       <div className="max-w-6xl mx-auto px-6 py-8">
         <Card className="terminal-card terminal-border">

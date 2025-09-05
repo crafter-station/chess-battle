@@ -6,6 +6,7 @@ import { ClerkProvider } from "@clerk/nextjs";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 
 import CrtToggle from "@/components/crt-toggle";
+import { Navbar } from "@/components/navbar";
 import { Toaster } from "@/components/ui/sonner";
 
 import MergeOnSignin from "./merge-client";
@@ -46,6 +47,7 @@ export default function RootLayout({
           className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         >
           <MergeOnSignin />
+          <Navbar />
           <NuqsAdapter>{children}</NuqsAdapter>
           <CrtToggle />
           <Toaster />

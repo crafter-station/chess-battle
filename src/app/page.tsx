@@ -19,7 +19,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 
-// Stable keys for skeleton elements to satisfy lint rules
+// Stable ugly keys for skeleton elements to satisfy lint rules
 const SKELETON_TOURNAMENT_KEYS = ["t1", "t2", "t3", "t4", "t5", "t6"];
 const SKELETON_BATTLE_KEYS = ["b1", "b2", "b3", "b4", "b5"];
 

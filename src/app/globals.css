@@ -302,7 +302,7 @@ body {
 
   .terminal-text {
     color: var(--foreground);
-    font-family: "Courier New", monospace;
+    font-family: "Oxanium", monospace;
     text-shadow: 0 0 2px rgba(45, 212, 191, 0.1);
   }
 

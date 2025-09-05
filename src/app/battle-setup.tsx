@@ -26,7 +26,11 @@ export default function BattleSetup() {
 
   const { data: models } = useLiveQuery((q) =>
     q.from({ model: AIModelsCollection }).select(({ model }) => ({
-      ...model,
+      canonical_id: model.canonical_id,
+      name: model.name,
+      description: model.description,
+      logo_url: model.logo_url,
+      provider: model.provider,
     })),
   );
 
@@ -45,36 +49,31 @@ export default function BattleSetup() {
   }, [state.output.success, router, state.output]);
 
   return (
-    <div className="max-w-2xl mx-auto px-6 py-8">
-      <Card className="terminal-card terminal-border">
-        <CardHeader>
-          <CardTitle className="terminal-text terminal-glow text-xl font-mono">
-            ⚔️ CONFIGURE BATTLE
-          </CardTitle>
-          <div className="terminal-text text-sm opacity-80">
-            &gt; Select two AI models to battle in chess
+    <Card className="terminal-card terminal-border">
+      <CardHeader className="pb-4">
+        <CardTitle className="terminal-text terminal-glow text-lg font-mono text-center">
+          ⚔️ CHOOSE YOUR MODELS
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <SignedOut>
+          <div className="terminal-text text-xs bg-yellow-950/30 border border-yellow-700/40 rounded-md p-2 text-center">
+            <SignInButton mode="modal">
+              <button
+                type="button"
+                className="terminal-text text-primary hover:text-primary/80 underline"
+              >
+                Sign in
+              </button>
+            </SignInButton>{" "}
+            for unlimited battles
           </div>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <SignedOut>
-            <div className="terminal-text text-sm bg-yellow-950/30 border border-yellow-700/40 rounded-md p-3">
-              You can start one battle as a guest. Sign in to create unlimited
-              battles and keep your history.
-              <div className="mt-2">
-                <SignInButton mode="modal">
-                  <button
-                    type="button"
-                    className="terminal-border bg-terminal-card px-3 py-2 rounded-md hover:bg-terminal-card/80"
-                  >
-                    Sign in
-                  </button>
-                </SignInButton>
-              </div>
-            </div>
-          </SignedOut>
-          {/* White Player Selection */}
+        </SignedOut>
+
+        {/* Model Selection Grid */}
+        <div className="grid md:grid-cols-2 gap-4">
           <ModelSelect
-            label="♔ WHITE PLAYER MODEL"
+            label="♔ WHITE"
             items={
               models.length > 0
                 ? models
@@ -87,12 +86,11 @@ export default function BattleSetup() {
             }
             value={whiteModel}
             onChange={setWhiteModel}
-            placeholder="Select model for White player"
+            placeholder="Select White model"
           />
 
-          {/* Black Player Selection */}
           <ModelSelect
-            label="♛ BLACK PLAYER MODEL"
+            label="♛ BLACK"
             items={
               models.length > 0
                 ? models
@@ -105,58 +103,62 @@ export default function BattleSetup() {
             }
             value={blackModel}
             onChange={setBlackModel}
-            placeholder="Select model for Black player"
+            placeholder="Select Black model"
           />
+        </div>
 
-          <form action={action}>
-            <input type="hidden" name="whitePlayerModelId" value={whiteModel} />
-            <input type="hidden" name="blackPlayerModelId" value={blackModel} />
-            <input type="hidden" name="engineMode" value={engineMode} />
+        <form action={action} className="space-y-3">
+          <input type="hidden" name="whitePlayerModelId" value={whiteModel} />
+          <input type="hidden" name="blackPlayerModelId" value={blackModel} />
+          <input type="hidden" name="engineMode" value={engineMode} />
 
-            <div className="terminal-text text-sm mt-4">
-              <div className="mb-2 font-mono">Engine mode</div>
-              <div className="flex items-center gap-4">
-                <label className="inline-flex items-center gap-2">
-                  <input
-                    type="radio"
-                    name="engineModeRadio"
-                    checked={engineMode === "json"}
-                    onChange={() => setEngineMode("json")}
-                  />
-                  <span>JSON schema</span>
-                </label>
-                <label className="inline-flex items-center gap-2">
-                  <input
-                    type="radio"
-                    name="engineModeRadio"
-                    checked={engineMode === "streaming"}
-                    onChange={() => setEngineMode("streaming")}
-                  />
-                  <span>Streaming + heuristic</span>
-                </label>
-              </div>
+          <div className="flex items-center justify-between text-xs">
+            <span className="terminal-text font-mono">Engine Mode:</span>
+            <div className="flex gap-3">
+              <label className="inline-flex items-center gap-1">
+                <input
+                  type="radio"
+                  name="engineModeRadio"
+                  checked={engineMode === "json"}
+                  onChange={() => setEngineMode("json")}
+                  className="w-3 h-3"
+                />
+                <span className="terminal-text text-xs">JSON</span>
+              </label>
+              <label className="inline-flex items-center gap-1">
+                <input
+                  type="radio"
+                  name="engineModeRadio"
+                  checked={engineMode === "streaming"}
+                  onChange={() => setEngineMode("streaming")}
+                  className="w-3 h-3"
+                />
+                <span className="terminal-text text-xs">Streaming</span>
+              </label>
             </div>
-            <Button
-              type="submit"
-              disabled={!whiteModel || !blackModel || isPending}
-            >
-              {isPending ? (
-                <span className="animate-pulse">⚔️ INITIALIZING BATTLE...</span>
-              ) : (
-                "🚀 START CHESS BATTLE"
-              )}
-            </Button>
-          </form>
+          </div>
 
-          {/* Validation Messages */}
-          {whiteModel && blackModel && whiteModel === blackModel && (
-            <div className="terminal-text text-red-400 text-sm text-center">
-              ⚠️ Please select different models for each player
-            </div>
-          )}
-        </CardContent>
-      </Card>
-      {/* ModelSelect renders its own preview in the dropdown */}
-    </div>
+          <Button
+            type="submit"
+            disabled={!whiteModel || !blackModel || isPending}
+            className="w-full terminal-button h-12"
+            size="lg"
+          >
+            {isPending ? (
+              <span className="animate-pulse">⚔️ INITIALIZING...</span>
+            ) : (
+              <span className="font-sans">🚀 START BATTLE</span>
+            )}
+          </Button>
+        </form>
+
+        {/* Validation Messages */}
+        {whiteModel && blackModel && whiteModel === blackModel && (
+          <div className="terminal-text text-red-400 text-xs text-center">
+            ⚠️ Please select different models for each player
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }

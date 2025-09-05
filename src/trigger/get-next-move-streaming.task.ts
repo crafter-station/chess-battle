@@ -1,7 +1,22 @@
 import { logger, metadata, schemaTask } from "@trigger.dev/sdk";
-import { streamText } from "ai";
+import { simulateReadableStream, streamText } from "ai";
 import { Chess } from "chess.js";
 import { z } from "zod";
+
+// Interface for streaming result (both real and simulated)
+interface StreamingResult {
+  textStream: ReadableStream<string>;
+  onFinish?: (
+    callback: (event: {
+      usage?: { inputTokens?: number; outputTokens?: number };
+    }) => void,
+  ) => void;
+  usage?: {
+    inputTokens: number;
+    outputTokens: number;
+    totalTokens: number;
+  };
+}
 
 // Heuristic regexes to extract a SAN move from arbitrary text
 // Note: We intentionally do NOT include a "Final Answer" pattern here
@@ -115,6 +130,102 @@ Final Answer: <SAN>`;
   ];
 }
 
+async function simulateStreamingAIResponse(
+  chess: Chess,
+  _playerModelId: string,
+): Promise<StreamingResult> {
+  const chessMoves = chess.moves();
+  const validMove = chessMoves[Math.floor(Math.random() * chessMoves.length)];
+
+  // Create different types of mock responses similar to the original task
+  const responseTypes = [
+    "normal",
+    "reasoning",
+    "response",
+    "tactical",
+    "positional",
+    "opening",
+    "endgame",
+  ];
+  const responseType =
+    responseTypes[Math.floor(Math.random() * responseTypes.length)];
+
+  let mockText = "";
+
+  switch (responseType) {
+    case "reasoning":
+      mockText = `Looking at this position, I need to evaluate the key factors. The center control is important, and piece development should be prioritized. The move ${validMove} appears to be the strongest option here as it improves my position while maintaining pressure.\n\nFinal Answer: ${validMove}`;
+      break;
+    case "response":
+      mockText = `This position requires careful analysis. Material is balanced, but positional factors favor active piece play. I can see that ${validMove} creates tactical opportunities while securing my king safety. This move also opens up future possibilities for coordinated attacks.\n\nFinal Answer: ${validMove}`;
+      break;
+    case "tactical":
+      mockText = `Let me examine the tactical elements of this position. I'm looking for forcing moves, pins, forks, and discovered attacks. The current material balance favors active piece play, and I notice some weak squares in the opponent's position. After careful calculation, ${validMove} emerges as the strongest continuation because it creates immediate threats while maintaining my position's integrity. This move also sets up potential tactical sequences on the next few moves.\n\nFinal Answer: ${validMove}`;
+      break;
+    case "positional":
+      mockText = `From a positional standpoint, this position offers several interesting features. The pawn structure suggests a particular strategic approach, and piece coordination will be key. I need to consider long-term factors like weak squares, pawn chains, and piece activity. The move ${validMove} improves my position significantly by enhancing piece coordination and creating better square control. This aligns well with the positional demands of the current pawn structure and gives me good prospects for the middlegame.\n\nFinal Answer: ${validMove}`;
+      break;
+    case "opening":
+      mockText = `In this opening phase, classical principles guide my decision-making. Rapid development, center control, and king safety are the primary concerns. The move ${validMove} follows sound opening theory by developing pieces toward the center and maintaining good piece coordination. This choice also keeps my options flexible for future development while applying pressure on key central squares. It's important to maintain the initiative while preparing for safe king placement.\n\nFinal Answer: ${validMove}`;
+      break;
+    case "endgame":
+      mockText = `Endgame technique requires precise calculation and understanding of fundamental principles. With fewer pieces on the board, every move carries greater weight. King activity becomes paramount, and pawn promotion threats must be carefully evaluated. The move ${validMove} demonstrates the correct approach by improving my king position while creating concrete threats. This move also helps in the race for pawn promotion and maintains the balance between attack and defense that endgames demand.\n\nFinal Answer: ${validMove}`;
+      break;
+    default:
+      mockText = `I'll analyze this position carefully. The move ${validMove} looks promising as it controls center squares and improves piece coordination.\n\nFinal Answer: ${validMove}`;
+  }
+
+  // Split text into chunks for streaming simulation
+  const words = mockText.split(" ");
+  const chunks: string[] = [];
+
+  // Create chunks of 2-4 words each
+  for (let i = 0; i < words.length; i += Math.floor(Math.random() * 3) + 2) {
+    const chunkWords = words.slice(i, i + Math.floor(Math.random() * 3) + 2);
+    chunks.push(
+      chunkWords.join(" ") + (i + chunkWords.length < words.length ? " " : ""),
+    );
+  }
+
+  // Generate mock usage statistics
+  const inputTokens = Math.floor(Math.random() * 100) + 50;
+  const outputTokens = Math.floor(Math.random() * 200) + 100;
+
+  // Create simulated stream with realistic delays
+  const textStream = simulateReadableStream({
+    chunks: chunks,
+    chunkDelayInMs: 100 + Math.floor(Math.random() * 200), // 100-300ms between chunks
+  });
+
+  // Return object structure compatible with streamText result
+  return {
+    textStream,
+    usage: {
+      inputTokens,
+      outputTokens,
+      totalTokens: inputTokens + outputTokens,
+    },
+    onFinish: (
+      callback: (event: {
+        usage?: { inputTokens?: number; outputTokens?: number };
+      }) => void,
+    ) => {
+      // Simulate the onFinish callback after stream completes
+      setTimeout(
+        () => {
+          callback({
+            usage: {
+              inputTokens,
+              outputTokens,
+            },
+          });
+        },
+        chunks.length * 200 + 1000,
+      ); // Rough estimate of when stream will finish
+    },
+  };
+}
+
 export const GetNextMoveStreamingTask = schemaTask({
   id: "get-next-move-streaming",
   schema: z.object({
@@ -137,19 +248,33 @@ export const GetNextMoveStreamingTask = schemaTask({
     let tokensIn: number | null = null;
     let tokensOut: number | null = null;
 
-    // Stream the model's response
-    const result = streamText({
-      model: playerModelId,
-      messages: constructMessages(chess, payload.lastInvalidMoves),
-      // Capture usage metrics when the stream completes
-      onFinish: (event) => {
-        // Some providers expose usage; if present, record it
-        tokensIn = event.usage?.inputTokens ?? null;
-        tokensOut = event.usage?.outputTokens ?? null;
-      },
-      // Keep system/user messages simple and provider-agnostic
-      // No provider-specific options here to support multiple vendors
-    });
+    // biome-ignore lint/suspicious/noExplicitAny: streaming result
+    let result: any;
+
+    if (process.env.NODE_ENV === "development") {
+      logger.info(`🔍 Simulating streaming AI response for ${playerModelId}`);
+      result = await simulateStreamingAIResponse(chess, playerModelId);
+
+      // In simulation mode, set token usage immediately since we know the values
+      if (result.usage) {
+        tokensIn = result.usage.inputTokens;
+        tokensOut = result.usage.outputTokens;
+      }
+    } else {
+      // Stream the model's response
+      result = streamText({
+        model: playerModelId,
+        messages: constructMessages(chess, payload.lastInvalidMoves),
+        // Capture usage metrics when the stream completes
+        onFinish: (event) => {
+          // Some providers expose usage; if present, record it
+          tokensIn = event.usage?.inputTokens ?? null;
+          tokensOut = event.usage?.outputTokens ?? null;
+        },
+        // Keep system/user messages simple and provider-agnostic
+        // No provider-specific options here to support multiple vendors
+      });
+    }
 
     // Expose the text stream for realtime subscriptions
     const stream = await metadata.stream("llm", result.textStream);

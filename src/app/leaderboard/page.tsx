@@ -1,9 +1,12 @@
 "use client";
 
+import { useEffect, useState } from "react";
+
 import useSWR from "swr";
 
 import { Navbar } from "@/components/navbar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 
 type ModelRow = {
   modelId: string;
@@ -18,6 +21,22 @@ type ModelRow = {
   rating: number | null;
 };
 
+// Stable keys for skeleton elements to satisfy lint rules
+const SKELETON_HEADER_KEYS = [
+  "rank",
+  "model",
+  "rating",
+  "games",
+  "wins",
+  "draws",
+  "losses",
+  "tokensIn",
+  "tokensOut",
+  "totalTokens",
+  "avgRt",
+];
+const SKELETON_ROW_KEYS = ["row1", "row2", "row3", "row4", "row5", "row6"];
+
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
 export default function LeaderboardPage() {
@@ -30,6 +49,20 @@ export default function LeaderboardPage() {
   );
 
   const rows = data?.data ?? [];
+  const [emptyReady, setEmptyReady] = useState(false);
+
+  // Debounce the empty state to avoid flashing "No data yet" during hydration
+  useEffect(() => {
+    if (data === undefined) {
+      setEmptyReady(false);
+      return;
+    }
+    if (rows.length === 0) {
+      const timeoutId = setTimeout(() => setEmptyReady(true), 300);
+      return () => clearTimeout(timeoutId);
+    }
+    setEmptyReady(false);
+  }, [data, rows.length]);
 
   return (
     <div className="min-h-screen terminal-card crt-flicker">
@@ -42,10 +75,74 @@ export default function LeaderboardPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {rows.length === 0 ? (
-              <div className="terminal-text text-center py-12 opacity-70">
-                &gt; No data yet. Create battles and come back.
+            {data === undefined ? (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left">
+                  <thead>
+                    <tr className="terminal-text text-xs opacity-70">
+                      {SKELETON_HEADER_KEYS.map((key) => (
+                        <th key={`head-skel-${key}`} className="p-2">
+                          <Skeleton className="h-4 w-20" />
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {SKELETON_ROW_KEYS.map((rowKey) => (
+                      <tr
+                        key={`row-skel-${rowKey}`}
+                        className="border-b border-white/10"
+                      >
+                        {SKELETON_HEADER_KEYS.map((colKey) => (
+                          <td
+                            key={`cell-skel-${rowKey}-${colKey}`}
+                            className="p-2"
+                          >
+                            <Skeleton className="h-4 w-16" />
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
+            ) : rows.length === 0 ? (
+              emptyReady ? (
+                <div className="terminal-text text-center py-12 opacity-70">
+                  &gt; No data yet. Create battles and come back.
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left">
+                    <thead>
+                      <tr className="terminal-text text-xs opacity-70">
+                        {SKELETON_HEADER_KEYS.map((key) => (
+                          <th key={`head-skel-wait-${key}`} className="p-2">
+                            <Skeleton className="h-4 w-20" />
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {SKELETON_ROW_KEYS.map((rowKey) => (
+                        <tr
+                          key={`row-skel-wait-${rowKey}`}
+                          className="border-b border-white/10"
+                        >
+                          {SKELETON_HEADER_KEYS.map((colKey) => (
+                            <td
+                              key={`cell-skel-wait-${rowKey}-${colKey}`}
+                              className="p-2"
+                            >
+                              <Skeleton className="h-4 w-16" />
+                            </td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-left">

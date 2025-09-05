@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import Link from "next/link";
+import { useEffect, useState } from "react";
 
 import { eq, useLiveQuery } from "@tanstack/react-db";
 
@@ -16,9 +17,18 @@ import { formatDate } from "@/lib/utils";
 import { Navbar } from "@/components/navbar";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+
+// Stable ugly keys for skeleton elements to satisfy lint rules
+const SKELETON_TOURNAMENT_KEYS = ["t1", "t2", "t3", "t4", "t5", "t6"];
+const SKELETON_BATTLE_KEYS = ["b1", "b2", "b3", "b4", "b5"];
 
 // Client-only content component - dynamically imported to avoid SSR
 function ClientContentInternal() {
+  // Debounced empty state flags to avoid flash of "not found data" while data hydrates
+  const [tournamentsEmptyReady, setTournamentsEmptyReady] = useState(false);
+  const [battlesEmptyReady, setBattlesEmptyReady] = useState(false);
+
   const { data: battles } = useLiveQuery((q) =>
     q
       .from({
@@ -48,6 +58,30 @@ function ClientContentInternal() {
       .orderBy(({ tournament }) => tournament.created_at, "desc"),
   );
 
+  useEffect(() => {
+    if (tournaments === undefined) {
+      setTournamentsEmptyReady(false);
+      return;
+    }
+    if (tournaments.length === 0) {
+      const timeoutId = setTimeout(() => setTournamentsEmptyReady(true), 300);
+      return () => clearTimeout(timeoutId);
+    }
+    setTournamentsEmptyReady(false);
+  }, [tournaments]);
+
+  useEffect(() => {
+    if (battles === undefined) {
+      setBattlesEmptyReady(false);
+      return;
+    }
+    if (battles.length === 0) {
+      const timeoutId = setTimeout(() => setBattlesEmptyReady(true), 300);
+      return () => clearTimeout(timeoutId);
+    }
+    setBattlesEmptyReady(false);
+  }, [battles]);
+
   return (
     <>
       {/* Tournaments Section */}
@@ -64,17 +98,61 @@ function ClientContentInternal() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {!tournaments || tournaments.length === 0 ? (
-            <div className="terminal-text text-center py-8 opacity-60">
-              &gt; No tournaments found.{" "}
-              <Link
-                href="/tournaments"
-                className="text-terminal-accent hover:underline"
-              >
-                Create your first tournament
-              </Link>
-              .
+          {tournaments === undefined ? (
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {SKELETON_TOURNAMENT_KEYS.map((key) => (
+                <Card
+                  key={`tournament-skel-inline-${key}`}
+                  className="terminal-card terminal-border h-full"
+                >
+                  <CardContent className="p-4">
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <Skeleton className="h-5 w-24" />
+                        <Skeleton className="h-4 w-16" />
+                      </div>
+                      <Skeleton className="h-5 w-3/4" />
+                      <Skeleton className="h-4 w-1/2" />
+                      <Skeleton className="h-3 w-1/3" />
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
             </div>
+          ) : tournaments.length === 0 ? (
+            tournamentsEmptyReady ? (
+              <div className="terminal-text text-center py-8 opacity-60">
+                &gt; No tournaments found.{" "}
+                <Link
+                  href="/tournaments"
+                  className="text-terminal-accent hover:underline"
+                >
+                  Create your first tournament
+                </Link>
+                .
+              </div>
+            ) : (
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {SKELETON_TOURNAMENT_KEYS.map((key) => (
+                  <Card
+                    key={`tournament-skel-inline-wait-${key}`}
+                    className="terminal-card terminal-border h-full"
+                  >
+                    <CardContent className="p-4">
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <Skeleton className="h-5 w-24" />
+                          <Skeleton className="h-4 w-16" />
+                        </div>
+                        <Skeleton className="h-5 w-3/4" />
+                        <Skeleton className="h-4 w-1/2" />
+                        <Skeleton className="h-3 w-1/3" />
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )
           ) : (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {tournaments.map((tournament) => (
@@ -133,10 +211,86 @@ function ClientContentInternal() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {!battles || battles.length === 0 ? (
-            <div className="terminal-text text-center py-8 opacity-60">
-              &gt; No battles found. Create your first AI chess battle above.
+          {battles === undefined ? (
+            <div className="space-y-4">
+              {SKELETON_BATTLE_KEYS.map((key) => (
+                <Card
+                  key={`battle-skel-inline-${key}`}
+                  className="terminal-card terminal-border"
+                >
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-4">
+                        <Skeleton className="h-5 w-24" />
+                        <div className="flex items-center space-x-2">
+                          <Skeleton className="h-6 w-6 rounded-full" />
+                          <div className="space-y-2">
+                            <Skeleton className="h-3 w-12" />
+                            <Skeleton className="h-4 w-24" />
+                          </div>
+                        </div>
+                        <Skeleton className="h-4 w-8" />
+                        <div className="flex items-center space-x-2">
+                          <Skeleton className="h-6 w-6 rounded-full" />
+                          <div className="space-y-2">
+                            <Skeleton className="h-3 w-12" />
+                            <Skeleton className="h-4 w-24" />
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-right space-y-2">
+                        <Skeleton className="h-3 w-24 ml-auto" />
+                        <Skeleton className="h-3 w-28 ml-auto" />
+                        <Skeleton className="h-3 w-20 ml-auto" />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
             </div>
+          ) : battles.length === 0 ? (
+            battlesEmptyReady ? (
+              <div className="terminal-text text-center py-8 opacity-60">
+                &gt; No battles found. Create your first AI chess battle above.
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {SKELETON_BATTLE_KEYS.map((key) => (
+                  <Card
+                    key={`battle-skel-inline-wait-${key}`}
+                    className="terminal-card terminal-border"
+                  >
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-4">
+                          <Skeleton className="h-5 w-24" />
+                          <div className="flex items-center space-x-2">
+                            <Skeleton className="h-6 w-6 rounded-full" />
+                            <div className="space-y-2">
+                              <Skeleton className="h-3 w-12" />
+                              <Skeleton className="h-4 w-24" />
+                            </div>
+                          </div>
+                          <Skeleton className="h-4 w-8" />
+                          <div className="flex items-center space-x-2">
+                            <Skeleton className="h-6 w-6 rounded-full" />
+                            <div className="space-y-2">
+                              <Skeleton className="h-3 w-12" />
+                              <Skeleton className="h-4 w-24" />
+                            </div>
+                          </div>
+                        </div>
+                        <div className="text-right space-y-2">
+                          <Skeleton className="h-3 w-24 ml-auto" />
+                          <Skeleton className="h-3 w-28 ml-auto" />
+                          <Skeleton className="h-3 w-20 ml-auto" />
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )
           ) : (
             <div className="space-y-4">
               {battles.map((battle) => (
@@ -245,8 +399,25 @@ function LoadingContent() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="terminal-text text-center py-8 opacity-60">
-            &gt; Loading tournaments...
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {SKELETON_TOURNAMENT_KEYS.map((key) => (
+              <Card
+                key={`tournament-skel-${key}`}
+                className="terminal-card terminal-border h-full"
+              >
+                <CardContent className="p-4">
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <Skeleton className="h-5 w-24" />
+                      <Skeleton className="h-4 w-16" />
+                    </div>
+                    <Skeleton className="h-5 w-3/4" />
+                    <Skeleton className="h-4 w-1/2" />
+                    <Skeleton className="h-3 w-1/3" />
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
           </div>
         </CardContent>
       </div>
@@ -258,8 +429,41 @@ function LoadingContent() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="terminal-text text-center py-8 opacity-60">
-            &gt; Loading battles...
+          <div className="space-y-4">
+            {SKELETON_BATTLE_KEYS.map((key) => (
+              <Card
+                key={`battle-skel-${key}`}
+                className="terminal-card terminal-border"
+              >
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-4">
+                      <Skeleton className="h-5 w-24" />
+                      <div className="flex items-center space-x-2">
+                        <Skeleton className="h-6 w-6 rounded-full" />
+                        <div className="space-y-2">
+                          <Skeleton className="h-3 w-12" />
+                          <Skeleton className="h-4 w-24" />
+                        </div>
+                      </div>
+                      <Skeleton className="h-4 w-8" />
+                      <div className="flex items-center space-x-2">
+                        <Skeleton className="h-6 w-6 rounded-full" />
+                        <div className="space-y-2">
+                          <Skeleton className="h-3 w-12" />
+                          <Skeleton className="h-4 w-24" />
+                        </div>
+                      </div>
+                    </div>
+                    <div className="text-right space-y-2">
+                      <Skeleton className="h-3 w-24 ml-auto" />
+                      <Skeleton className="h-3 w-28 ml-auto" />
+                      <Skeleton className="h-3 w-20 ml-auto" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
           </div>
         </CardContent>
       </div>
@@ -287,8 +491,15 @@ const BattleSetup = dynamic(() => import("./battle-setup"), {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="terminal-text text-center py-8 opacity-60">
-            &gt; Initializing battle setup...
+          <div className="space-y-4">
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+            <div className="grid grid-cols-2 gap-4">
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+            </div>
+            <Skeleton className="h-12 w-32" />
           </div>
         </CardContent>
       </Card>

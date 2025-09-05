@@ -138,7 +138,15 @@ async function simulateStreamingAIResponse(
   const validMove = chessMoves[Math.floor(Math.random() * chessMoves.length)];
 
   // Create different types of mock responses similar to the original task
-  const responseTypes = ["normal", "reasoning", "response"];
+  const responseTypes = [
+    "normal",
+    "reasoning",
+    "response",
+    "tactical",
+    "positional",
+    "opening",
+    "endgame",
+  ];
   const responseType =
     responseTypes[Math.floor(Math.random() * responseTypes.length)];
 
@@ -150,6 +158,18 @@ async function simulateStreamingAIResponse(
       break;
     case "response":
       mockText = `This position requires careful analysis. Material is balanced, but positional factors favor active piece play. I can see that ${validMove} creates tactical opportunities while securing my king safety. This move also opens up future possibilities for coordinated attacks.\n\nFinal Answer: ${validMove}`;
+      break;
+    case "tactical":
+      mockText = `Let me examine the tactical elements of this position. I'm looking for forcing moves, pins, forks, and discovered attacks. The current material balance favors active piece play, and I notice some weak squares in the opponent's position. After careful calculation, ${validMove} emerges as the strongest continuation because it creates immediate threats while maintaining my position's integrity. This move also sets up potential tactical sequences on the next few moves.\n\nFinal Answer: ${validMove}`;
+      break;
+    case "positional":
+      mockText = `From a positional standpoint, this position offers several interesting features. The pawn structure suggests a particular strategic approach, and piece coordination will be key. I need to consider long-term factors like weak squares, pawn chains, and piece activity. The move ${validMove} improves my position significantly by enhancing piece coordination and creating better square control. This aligns well with the positional demands of the current pawn structure and gives me good prospects for the middlegame.\n\nFinal Answer: ${validMove}`;
+      break;
+    case "opening":
+      mockText = `In this opening phase, classical principles guide my decision-making. Rapid development, center control, and king safety are the primary concerns. The move ${validMove} follows sound opening theory by developing pieces toward the center and maintaining good piece coordination. This choice also keeps my options flexible for future development while applying pressure on key central squares. It's important to maintain the initiative while preparing for safe king placement.\n\nFinal Answer: ${validMove}`;
+      break;
+    case "endgame":
+      mockText = `Endgame technique requires precise calculation and understanding of fundamental principles. With fewer pieces on the board, every move carries greater weight. King activity becomes paramount, and pawn promotion threats must be carefully evaluated. The move ${validMove} demonstrates the correct approach by improving my king position while creating concrete threats. This move also helps in the race for pawn promotion and maintains the balance between attack and defense that endgames demand.\n\nFinal Answer: ${validMove}`;
       break;
     default:
       mockText = `I'll analyze this position carefully. The move ${validMove} looks promising as it controls center squares and improves piece coordination.\n\nFinal Answer: ${validMove}`;

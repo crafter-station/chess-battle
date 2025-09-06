@@ -49,7 +49,7 @@ export default function BattleSetup() {
   }, [state.output.success, router, state.output]);
 
   return (
-    <Card className="terminal-card terminal-border">
+    <Card className="terminal-card terminal-border gap-0">
       <CardHeader className="pb-4">
         <CardTitle className="terminal-text terminal-glow text-lg font-mono text-center">
           ⚔️ CHOOSE YOUR MODELS

@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import { SignedIn, SignedOut, SignInButton, UserButton } from "@clerk/nextjs";
+
 export function Navbar() {
   return (
     <nav className="sticky top-0 z-50 bg-black/95 backdrop-blur-sm border-b border-terminal-accent/20">
@@ -44,6 +46,37 @@ export function Navbar() {
             >
               LEADERBOARD
             </Link>
+
+            {/* Authentication Section */}
+            <div className="flex items-center">
+              <SignedOut>
+                <SignInButton mode="modal">
+                  <button
+                    type="button"
+                    className="terminal-text hover:text-terminal-accent transition-colors font-mono text-xs px-3 py-1.5 border border-terminal-accent/30 rounded-md hover:bg-terminal-accent/10"
+                  >
+                    SIGN IN
+                  </button>
+                </SignInButton>
+              </SignedOut>
+              <SignedIn>
+                <UserButton
+                  appearance={{
+                    elements: {
+                      avatarBox:
+                        "w-8 h-8 border border-terminal-accent/30 rounded-md",
+                      userButtonPopoverCard:
+                        "bg-black border border-terminal-accent/30",
+                      userButtonPopoverActionButton:
+                        "terminal-text hover:text-terminal-accent transition-colors",
+                      userButtonPopoverActionButtonText:
+                        "terminal-text font-mono text-xs",
+                    },
+                  }}
+                  afterSignOutUrl="/"
+                />
+              </SignedIn>
+            </div>
           </div>
         </div>
       </div>

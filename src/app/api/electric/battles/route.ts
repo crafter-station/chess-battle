@@ -1,7 +1,6 @@
 import { ELECTRIC_PROTOCOL_QUERY_PARAMS } from "@electric-sql/client";
 
 import { ELECTRIC_URL } from "@/lib/electric";
-import { getUser } from "@/lib/get-user";
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
@@ -18,18 +17,6 @@ export async function GET(request: Request) {
 
   // Set the table server-side - not from client params
   originUrl.searchParams.set("table", "battle");
-
-  //
-  // Authentication and authorization
-  //
-
-  const userId = await getUser();
-
-  // Filter data by user ID - each user can only see their own battles
-  originUrl.searchParams.set(
-    "where",
-    `"user_id" = '${userId}' OR "is_public" = true`,
-  );
 
   const response = await fetch(originUrl);
 

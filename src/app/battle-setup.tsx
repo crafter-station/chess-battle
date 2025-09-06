@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import * as React from "react";
 
-import { SignedOut, SignInButton } from "@clerk/nextjs";
+import { SignedIn, SignedOut, SignInButton } from "@clerk/nextjs";
 import { useLiveQuery } from "@tanstack/react-db";
 
 import { AIModelsCollection } from "@/db/electric";
@@ -57,107 +57,115 @@ export default function BattleSetup() {
       </CardHeader>
       <CardContent className="space-y-4">
         <SignedOut>
-          <div className="terminal-text text-xs bg-yellow-950/30 border border-yellow-700/40 rounded-md p-2 text-center">
+          <div className="flex flex-col items-center justify-center min-h-[300px] space-y-4">
+            <div className="text-6xl">🎮</div>
+            <div className="text-center space-y-2">
+              <h3 className="terminal-text text-lg font-mono terminal-glow">
+                Ready to Battle?
+              </h3>
+              <p className="terminal-text text-sm opacity-80 max-w-sm">
+                Login and claim your free credits to start playing chess battles
+                with AI models
+              </p>
+            </div>
             <SignInButton mode="modal">
-              <button
-                type="button"
-                className="terminal-text text-primary hover:text-primary/80 underline"
-              >
-                Sign in
-              </button>
-            </SignInButton>{" "}
-            for unlimited battles
+              <Button className="terminal-button px-8 py-3">
+                🚀 Login & Claim Free Credits
+              </Button>
+            </SignInButton>
           </div>
         </SignedOut>
 
-        {/* Model Selection Grid */}
-        <div className="grid md:grid-cols-2 gap-4">
-          <ModelSelect
-            label="♔ WHITE"
-            items={
-              models.length > 0
-                ? models
-                : MODELS.map((m) => ({
-                    canonical_id: m,
-                    name: m,
-                    description: null,
-                    logo_url: null,
-                  }))
-            }
-            value={whiteModel}
-            onChange={setWhiteModel}
-            placeholder="Select White model"
-          />
+        <SignedIn>
+          {/* Model Selection Grid */}
+          <div className="grid md:grid-cols-2 gap-4">
+            <ModelSelect
+              label="♔ WHITE"
+              items={
+                models.length > 0
+                  ? models
+                  : MODELS.map((m) => ({
+                      canonical_id: m,
+                      name: m,
+                      description: null,
+                      logo_url: null,
+                    }))
+              }
+              value={whiteModel}
+              onChange={setWhiteModel}
+              placeholder="Select White model"
+            />
 
-          <ModelSelect
-            label="♛ BLACK"
-            items={
-              models.length > 0
-                ? models
-                : MODELS.map((m) => ({
-                    canonical_id: m,
-                    name: m,
-                    description: null,
-                    logo_url: null,
-                  }))
-            }
-            value={blackModel}
-            onChange={setBlackModel}
-            placeholder="Select Black model"
-          />
-        </div>
+            <ModelSelect
+              label="♛ BLACK"
+              items={
+                models.length > 0
+                  ? models
+                  : MODELS.map((m) => ({
+                      canonical_id: m,
+                      name: m,
+                      description: null,
+                      logo_url: null,
+                    }))
+              }
+              value={blackModel}
+              onChange={setBlackModel}
+              placeholder="Select Black model"
+            />
+          </div>
 
-        <form action={action} className="space-y-3">
-          <input type="hidden" name="whitePlayerModelId" value={whiteModel} />
-          <input type="hidden" name="blackPlayerModelId" value={blackModel} />
-          <input type="hidden" name="engineMode" value={engineMode} />
+          <form action={action} className="space-y-3">
+            <input type="hidden" name="whitePlayerModelId" value={whiteModel} />
+            <input type="hidden" name="blackPlayerModelId" value={blackModel} />
+            <input type="hidden" name="engineMode" value={engineMode} />
 
-          <div className="flex items-center justify-between text-xs">
-            <span className="terminal-text font-mono">Engine Mode:</span>
-            <div className="flex gap-3">
-              <label className="inline-flex items-center gap-1">
-                <input
-                  type="radio"
-                  name="engineModeRadio"
-                  checked={engineMode === "json"}
-                  onChange={() => setEngineMode("json")}
-                  className="w-3 h-3"
-                />
-                <span className="terminal-text text-xs">JSON</span>
-              </label>
-              <label className="inline-flex items-center gap-1">
-                <input
-                  type="radio"
-                  name="engineModeRadio"
-                  checked={engineMode === "streaming"}
-                  onChange={() => setEngineMode("streaming")}
-                  className="w-3 h-3"
-                />
-                <span className="terminal-text text-xs">Streaming</span>
-              </label>
+            <div className="flex items-center justify-between text-xs">
+              <span className="terminal-text font-mono">Engine Mode:</span>
+              <div className="flex gap-3">
+                <label className="inline-flex items-center gap-1">
+                  <input
+                    type="radio"
+                    name="engineModeRadio"
+                    checked={engineMode === "json"}
+                    onChange={() => setEngineMode("json")}
+                    className="w-3 h-3"
+                  />
+                  <span className="terminal-text text-xs">JSON</span>
+                </label>
+                <label className="inline-flex items-center gap-1">
+                  <input
+                    type="radio"
+                    name="engineModeRadio"
+                    checked={engineMode === "streaming"}
+                    onChange={() => setEngineMode("streaming")}
+                    className="w-3 h-3"
+                  />
+                  <span className="terminal-text text-xs">Streaming</span>
+                </label>
+              </div>
             </div>
-          </div>
 
-          <Button
-            type="submit"
-            disabled={!whiteModel || !blackModel || isPending}
-            className="w-full terminal-button h-12"
-            size="lg"
-          >
-            {isPending ? (
-              <span className="animate-pulse">⚔️ INITIALIZING...</span>
-            ) : (
-              <span className="font-sans">🚀 START BATTLE</span>
-            )}
-          </Button>
-        </form>
+            <Button
+              type="submit"
+              disabled={!whiteModel || !blackModel || isPending}
+              className="w-full terminal-button h-12"
+              size="lg"
+            >
+              {isPending ? (
+                <span className="animate-pulse">⚔️ INITIALIZING...</span>
+              ) : (
+                <span className="font-sans">🚀 START BATTLE</span>
+              )}
+            </Button>
+          </form>
 
-        {/* Validation Messages */}
-        {whiteModel && blackModel && whiteModel === blackModel && (
-          <div className="terminal-text text-red-400 text-xs text-center">
-            ⚠️ Please select different models for each player
-          </div>
-        )}
+          {/* Validation Messages */}
+          {whiteModel && blackModel && whiteModel === blackModel && (
+            <div className="terminal-text text-red-400 text-xs text-center">
+              ⚠️ Please select different models for each player
+            </div>
+          )}
+        </SignedIn>
       </CardContent>
     </Card>
   );

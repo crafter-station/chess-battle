@@ -49,8 +49,10 @@ export function Navbar() {
               LEADERBOARD
             </Link>
           </div>
-          <UserButton />
-          <CreditsButton />
+          <div className="flex items-center space-x-4">
+            <CreditsButton />
+            <UserButton />
+          </div>
         </div>
       </div>
     </nav>

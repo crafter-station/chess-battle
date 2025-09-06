@@ -9,6 +9,7 @@ import { Chess } from "chess.js";
 import { z } from "zod";
 
 import { MOCK_RESPONSE, MOCK_RESPONSE_REASONING } from "@/lib/mock-responses";
+import { PRIME_MODELS, PRO_MODELS } from "@/lib/models";
 
 if (!process.env.POLAR_ACCESS_TOKEN) {
   throw new Error("POLAR_ACCESS_TOKEN is not set");
@@ -57,6 +58,15 @@ export const GetNextMoveTask = schemaTask({
       chess.turn() === "w"
         ? payload.whitePlayerModelId
         : payload.blackPlayerModelId;
+
+    let modelType: "LITE" | "PRO" | "PRIME" = "LITE";
+    if (PRO_MODELS.includes(playerModelId as (typeof PRO_MODELS)[number])) {
+      modelType = "PRO";
+    } else if (
+      PRIME_MODELS.includes(playerModelId as (typeof PRIME_MODELS)[number])
+    ) {
+      modelType = "PRIME";
+    }
 
     // TODO: validate if the user has enough credits to make the move
 
@@ -117,7 +127,7 @@ export const GetNextMoveTask = schemaTask({
           name: "move_generated",
           externalCustomerId: payload.userId,
           metadata: {
-            move: "PRIME", // TODO: logic to determine if the move is prime, pro or lite based on model cost
+            move: modelType,
           },
         },
       ],

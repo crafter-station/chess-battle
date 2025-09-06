@@ -20,7 +20,6 @@ import {
 import { cn } from "@/lib/utils";
 
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
 
 export function PlayerCard({
   playerId,
@@ -81,7 +80,7 @@ export function PlayerCard({
     return moves.filter((move) => !move.is_valid).length;
   }, [totalMoves, moves]);
 
-  const outputTokenCount = React.useMemo(() => {
+  const _outputTokenCount = React.useMemo(() => {
     if (totalMoves === 0) return 0;
     return moves.reduce((acc, move) => acc + (move.tokens_out ?? 0), 0);
   }, [totalMoves, moves]);
@@ -131,79 +130,67 @@ export function PlayerCard({
   }
 
   return (
-    <Card
-      className={cn("terminal-card terminal-border py-1 px-2", {
-        "ring-2 ring-terminal-accent": isActive,
-      })}
+    <div
+      className={cn(
+        "terminal-border rounded-lg p-2 sm:p-3 lg:p-4 bg-black/20 transition-all",
+        {
+          "ring-2 ring-primary/50 bg-primary/10": isActive,
+        },
+      )}
     >
-      <CardContent>
-        <div className="flex items-center gap-3">
-          <Badge
-            variant={isActive ? "default" : "secondary"}
-            className={cn(
-              isActive
-                ? "text-primary-foreground"
-                : "text-secondary-foreground",
-            )}
-          >
-            {color === "WHITE" ? "♔" : "♛"} {color}
-          </Badge>
+      <div className="flex items-center gap-2 sm:gap-3 lg:gap-4">
+        {player.model?.logo_url ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          // biome-ignore lint/performance/noImgElement: necessary for provider logos
+          <img
+            src={player.model.logo_url}
+            alt={player.model.name}
+            className="h-8 w-8 sm:h-10 sm:w-10 lg:h-12 lg:w-12 rounded-lg flex-shrink-0"
+          />
+        ) : (
+          <div className="h-8 w-8 sm:h-10 sm:w-10 lg:h-12 lg:w-12 rounded-lg bg-terminal-border flex items-center justify-center text-lg sm:text-xl lg:text-2xl opacity-70 flex-shrink-0">
+            🧠
+          </div>
+        )}
 
-          {player.model?.logo_url ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            // biome-ignore lint/performance/noImgElement: necessary for provider logos
-            <img
-              src={player.model.logo_url}
-              alt={player.model.name}
-              className="h-8 w-8 rounded"
-            />
-          ) : (
-            <div className="h-8 w-8 rounded bg-terminal-border flex items-center justify-center text-sm opacity-70">
-              🧠
-            </div>
-          )}
-
-          <div className="flex-1 min-w-0">
-            <div className="terminal-text font-mono text-sm font-semibold truncate">
-              {player.model?.name ?? player.model?.canonical_id}
-            </div>
-            {player.model?.provider && (
-              <div className="terminal-text text-xs opacity-70 capitalize">
-                {player.model.provider}
-              </div>
-            )}
-            {player.model?.description && (
-              <div className="terminal-text text-xs opacity-60 line-clamp-2 mt-1">
-                {player.model.description}
-              </div>
+        <div className="flex-1 min-w-0 text-center">
+          <div className="terminal-text font-mono text-sm sm:text-base lg:text-lg font-bold truncate">
+            {player.model?.name ?? player.model?.canonical_id}
+          </div>
+          <div className="flex items-center justify-center gap-1 sm:gap-2 text-[10px] sm:text-xs opacity-80 mt-1">
+            <span>{totalMoves}m</span>
+            <span>•</span>
+            <span>{averageDuration}ms</span>
+            {invalidMoves > 0 && (
+              <>
+                <span>•</span>
+                <span className="text-red-400">{invalidMoves}⚠</span>
+              </>
             )}
           </div>
         </div>
-        <div className="terminal-text text-xs opacity-60 mt-1">
-          {totalMoves} moves
-        </div>
-        <div className="terminal-text text-xs opacity-60 mt-1">
-          {averageDuration}ms average move duration (
-          {formatDurationToHumanReadable(averageDuration)})
-        </div>
-        <div className="terminal-text text-xs opacity-60 mt-1">
-          {invalidMoves} invalid moves
-        </div>
-        <div className="terminal-text text-xs opacity-60 mt-1">
-          {duration}ms total duration ({formatDurationToHumanReadable(duration)}
-          )
-        </div>
-        <div className="terminal-text text-xs opacity-60 mt-1">
-          {outputTokenCount} tokens out
-        </div>
 
-        {streamedPanel}
-      </CardContent>
-    </Card>
+        <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
+          <Badge
+            variant={isActive ? "default" : "secondary"}
+            className={cn(
+              "text-[10px] sm:text-xs lg:text-sm font-mono px-1.5 py-0.5 sm:px-2 sm:py-1 lg:px-3",
+              isActive
+                ? "bg-primary/30 text-primary border-primary/50"
+                : "bg-secondary/30 text-secondary-foreground",
+            )}
+          >
+            {color === "WHITE" ? "○ W" : "● B"}
+          </Badge>
+        </div>
+      </div>
+
+      {streamedPanel}
+    </div>
   );
 }
 
-function formatDurationToHumanReadable(duration: number) {
+function _formatDurationToHumanReadable(duration: number) {
   if (duration < 1000) {
     return `${duration}ms`;
   } else if (duration < 60000) {
@@ -275,10 +262,10 @@ function PlayerRunStreamViewer({
   if (!latestRunId && !streamedText) return null;
 
   return (
-    <div className="mt-3 p-2 rounded border border-terminal-border/60 bg-terminal-card/60">
+    <div className="mt-2 p-2 rounded border border-terminal-border/60 bg-black/30">
       <div
         ref={scrollRef}
-        className="terminal-text text-xs font-mono whitespace-pre-wrap break-words max-h-40 overflow-auto"
+        className="terminal-text text-[10px] font-mono whitespace-pre-wrap break-words max-h-20 overflow-auto opacity-80"
       >
         {streamedText}
       </div>

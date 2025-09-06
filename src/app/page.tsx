@@ -224,7 +224,7 @@ const BattleSetup = dynamic(() => import("./battle-setup"), {
 
 export default function Page() {
   return (
-    <div className="min-h-screen bg-background crt-flicker">
+    <div className="min-h-[calc(100vh-52px)] bg-background crt-flicker">
       {/* Hero Section */}
       <div className="relative overflow-hidden">
         <div className="max-w-7xl mx-auto px-6 py-12">

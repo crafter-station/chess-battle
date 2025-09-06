@@ -4,82 +4,85 @@ import { SignedIn, SignedOut, SignInButton, UserButton } from "@clerk/nextjs";
 
 export function Navbar() {
   return (
-    <nav className="sticky top-0 z-50 bg-black/95 backdrop-blur-sm border-b border-terminal-accent/20">
-      <div className="max-w-6xl mx-auto px-4 py-2">
-        <div className="flex items-center justify-between">
-          <Link href="/" className="group flex items-center gap-2">
-            <svg
-              width="20"
-              height="20"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              className="text-foreground"
-            >
-              <title>Chess Battle Logo</title>
-              <path
-                d="M2 2h20v20H2V2zm2 2v4h4v4H4v4h4v4h4v-4h4v4h4v-4h-4v-4h4V8h-4V4h-4v4H8V4H4zm8 8H8v4h4v-4zm0-4v4h4V8h-4z"
-                fill="currentColor"
-              />
-            </svg>
-            <span className="terminal-text terminal-glow text-lg font-mono group-hover:text-terminal-accent transition-colors">
-              CHESS_BATTLE
+    <header className="border-b border-terminal-border bg-black/40 backdrop-blur-sm flex-shrink-0">
+      <div className="px-4 py-3 flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Link
+            href="/"
+            className="flex items-center gap-2 terminal-text hover:text-primary transition-colors"
+          >
+            <div className="w-6 h-6 rounded bg-primary/20 border border-primary/30 flex items-center justify-center">
+              <svg
+                width="12"
+                height="12"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                className="text-primary"
+              >
+                <title>Chess Icon</title>
+                <path
+                  d="M2 2h20v20H2V2zm2 2v4h4v4H4v4h4v4h4v-4h4v4h4v-4h-4v-4h4V8h-4V4h-4v4H8V4H4zm8 8H8v4h4v-4zm0-4v4h4V8h-4z"
+                  fill="white"
+                />
+              </svg>
+            </div>
+            <span className="font-mono text-sm terminal-glow">
+              CHESS BATTLE
             </span>
           </Link>
-
-          <div className="flex items-center space-x-4">
-            <Link
-              href="/"
-              className="terminal-text hover:text-terminal-accent transition-colors font-mono text-xs"
-            >
-              HOME
-            </Link>
-            <Link
-              href="/tournaments"
-              className="terminal-text hover:text-terminal-accent transition-colors font-mono text-xs"
-            >
-              TOURNAMENT
-            </Link>
-            <Link
-              href="/leaderboard"
-              className="terminal-text hover:text-terminal-accent transition-colors font-mono text-xs"
-            >
-              LEADERBOARD
-            </Link>
-
-            {/* Authentication Section */}
-            <div className="flex items-center">
-              <SignedOut>
-                <SignInButton mode="modal">
-                  <button
-                    type="button"
-                    className="terminal-text hover:text-terminal-accent transition-colors font-mono text-xs px-3 py-1.5 border border-terminal-accent/30 rounded-md hover:bg-terminal-accent/10"
-                  >
-                    SIGN IN
-                  </button>
-                </SignInButton>
-              </SignedOut>
-              <SignedIn>
-                <UserButton
-                  appearance={{
-                    elements: {
-                      avatarBox:
-                        "w-8 h-8 border border-terminal-accent/30 rounded-md",
-                      userButtonPopoverCard:
-                        "bg-black border border-terminal-accent/30",
-                      userButtonPopoverActionButton:
-                        "terminal-text hover:text-terminal-accent transition-colors",
-                      userButtonPopoverActionButtonText:
-                        "terminal-text font-mono text-xs",
-                    },
-                  }}
-                  afterSignOutUrl="/"
-                />
-              </SignedIn>
-            </div>
-          </div>
         </div>
+        <nav className="flex items-center gap-6">
+          <Link
+            href="/"
+            className="terminal-text text-xs hover:text-primary transition-colors px-2 py-1 rounded border border-transparent hover:border-primary/30"
+          >
+            HOME
+          </Link>
+          <Link
+            href="/tournaments"
+            className="terminal-text text-xs hover:text-primary transition-colors px-2 py-1 rounded border border-transparent hover:border-primary/30"
+          >
+            TOURNAMENTS
+          </Link>
+          <Link
+            href="/leaderboard"
+            className="terminal-text text-xs hover:text-primary transition-colors px-2 py-1 rounded border border-transparent hover:border-primary/30"
+          >
+            LEADERBOARD
+          </Link>
+
+          {/* Authentication Section */}
+          <div className="flex items-center">
+            <SignedOut>
+              <SignInButton mode="modal">
+                <button
+                  type="button"
+                  className="terminal-border bg-terminal-card px-3 py-1.5 rounded text-xs hover:bg-terminal-card/80 transition-colors terminal-text"
+                >
+                  SIGN IN
+                </button>
+              </SignInButton>
+            </SignedOut>
+            <SignedIn>
+              <UserButton
+                appearance={{
+                  elements: {
+                    avatarBox: "w-8 h-8 border border-primary/30 rounded",
+                    userButtonPopoverCard:
+                      "bg-black/90 border border-terminal-border backdrop-blur-sm",
+                    userButtonPopoverActionButton:
+                      "terminal-text hover:text-primary transition-colors",
+                    userButtonPopoverActionButtonText:
+                      "terminal-text font-mono text-xs",
+                  },
+                }}
+                afterSignOutUrl="/"
+              />
+            </SignedIn>
+          </div>
+        </nav>
       </div>
-    </nav>
+    </header>
   );
 }

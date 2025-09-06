@@ -141,7 +141,7 @@ export default function LeaderboardClient() {
   }, [data, rows.length]);
 
   return (
-    <div className="min-h-screen bg-background crt-flicker">
+    <div className="min-h-[calc(100vh-52px)] bg-background crt-flicker">
       <div className="max-w-6xl mx-auto px-6 py-8 space-y-8">
         <Card className="terminal-card terminal-border">
           <CardHeader>

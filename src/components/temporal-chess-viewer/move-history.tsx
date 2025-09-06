@@ -2,8 +2,6 @@
 
 import { useParams } from "next/navigation";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-
 import { useMoveIndex } from "@/hooks/use-move-index";
 import { useMoves } from "@/hooks/use-moves";
 
@@ -13,51 +11,56 @@ export function MoveHistory() {
   const { moveIndex, setMoveIndex } = useMoveIndex();
 
   return (
-    <Card className="terminal-card terminal-border">
-      <CardHeader>
-        <CardTitle className="terminal-text text-sm">MOVE_LOG</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="max-h-64 overflow-y-auto space-y-1 font-mono text-xs">
+    <div className="h-full flex flex-col">
+      <div className="terminal-text text-xs terminal-glow font-mono opacity-70 p-4 pb-2 border-b border-terminal-border/30">
+        MOVE_LOG
+      </div>
+      <div className="flex-1 overflow-y-auto px-4 pb-4">
+        <div className="space-y-1 font-mono text-xs">
           <button
             type="button"
             onClick={() => setMoveIndex(0)}
-            className={`w-full text-left p-2 rounded terminal-border transition-colors ${
+            className={`w-full text-left px-2 py-1.5 rounded text-xs transition-colors ${
               moveIndex === 0
-                ? "terminal-button"
-                : "hover:bg-secondary/20 terminal-text"
+                ? "bg-primary/20 border border-primary/30 text-primary"
+                : "hover:bg-black/30 terminal-text border border-transparent"
             }`}
           >
-            START
+            <span className="terminal-glow">● START</span>
           </button>
           {moves.map((move, index) => (
             <button
               key={move.id}
               type="button"
               onClick={() => setMoveIndex(index + 1)}
-              className={`w-full text-left p-2 rounded terminal-border transition-colors ${
+              className={`w-full text-left px-2 py-1.5 rounded text-xs transition-colors ${
                 moveIndex === index + 1
-                  ? "terminal-button"
-                  : "hover:bg-secondary/20 terminal-text"
+                  ? "bg-primary/20 border border-primary/30 text-primary"
+                  : "hover:bg-black/30 terminal-text border border-transparent"
               }`}
             >
-              <span className="opacity-70">{index + 1}.</span>
-              <span className="ml-2">{move.move}</span>
-              {move.player?.model_id && (
-                <span className="ml-2 opacity-60">
-                  [{move.player.model_id}]
-                </span>
-              )}
-              {typeof move.confidence === "number" && (
-                <span className="ml-2 opacity-50">{move.confidence}%</span>
-              )}
-              {!move.is_valid && (
-                <span className="ml-2 text-red-400">[ERR]</span>
-              )}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span
+                    className={`w-4 text-xs ${moveIndex === index + 1 ? "text-primary" : "opacity-70"}`}
+                  >
+                    {(index + 1).toString().padStart(2, "0")}.
+                  </span>
+                  <span className="font-mono">{move.move}</span>
+                  {!move.is_valid && (
+                    <span className="text-red-400 text-[10px]">ERR</span>
+                  )}
+                </div>
+                <div className="flex items-center gap-1 text-[10px] opacity-60">
+                  {typeof move.confidence === "number" && (
+                    <span>{move.confidence}%</span>
+                  )}
+                </div>
+              </div>
             </button>
           ))}
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

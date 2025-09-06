@@ -5,6 +5,8 @@ import { useState } from "react";
 
 import { SignedIn, SignedOut, SignInButton, UserButton } from "@clerk/nextjs";
 
+import { CreditsButton } from "./credits-button";
+
 export function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -74,6 +76,7 @@ export function Navbar() {
               </SignInButton>
             </SignedOut>
             <SignedIn>
+              <CreditsButton />
               <UserButton
                 appearance={{
                   elements: {
@@ -108,6 +111,7 @@ export function Navbar() {
               </SignInButton>
             </SignedOut>
             <SignedIn>
+              <CreditsButton />
               <UserButton
                 appearance={{
                   elements: {

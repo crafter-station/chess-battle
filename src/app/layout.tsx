@@ -7,6 +7,7 @@ import { NuqsAdapter } from "nuqs/adapters/next/app";
 
 import CrtToggle from "@/components/crt-toggle";
 import { Navbar } from "@/components/navbar";
+import { Providers } from "@/components/providers";
 import { Toaster } from "@/components/ui/sonner";
 
 import MergeOnSignin from "./merge-client";
@@ -46,13 +47,15 @@ export default function RootLayout({
         <body
           className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased flex flex-col min-h-screen`}
         >
-          <MergeOnSignin />
-          <Navbar />
-          <main className="flex-1">
-            <NuqsAdapter>{children}</NuqsAdapter>
-          </main>
-          <CrtToggle />
-          <Toaster />
+          <Providers>
+            <MergeOnSignin />
+            <Navbar />
+            <main className="flex-1">
+              <NuqsAdapter>{children}</NuqsAdapter>
+            </main>
+            <CrtToggle />
+            <Toaster />
+          </Providers>
         </body>
       </html>
     </ClerkProvider>

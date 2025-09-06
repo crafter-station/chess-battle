@@ -4,6 +4,8 @@ import * as React from "react";
 
 import { Check, ChevronsUpDown } from "lucide-react";
 
+import { PRIME_MODELS, PRO_MODELS } from "@/lib/models";
+import { METERS_NAMES } from "@/lib/product-name";
 import { cn } from "@/lib/utils";
 
 import { Button } from "@/components/ui/button";
@@ -22,12 +24,25 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 
+import { useCustomer } from "@/hooks/use-customer";
+
 export type ModelOption = {
   canonical_id: string;
   name: string | null;
   description: string | null;
   logo_url: string | null;
 };
+
+// Helper function to determine model tier
+function getModelTier(modelId: string): "LITE" | "PRO" | "PRIME" {
+  if (PRO_MODELS.includes(modelId as (typeof PRO_MODELS)[number])) {
+    return "PRO";
+  }
+  if (PRIME_MODELS.includes(modelId as (typeof PRIME_MODELS)[number])) {
+    return "PRIME";
+  }
+  return "LITE";
+}
 
 export function ModelSelect({
   label,
@@ -44,6 +59,29 @@ export function ModelSelect({
 }) {
   const [open, setOpen] = React.useState(false);
   const selected = items.find((m) => m.canonical_id === value);
+  const { data: customer, isLoading } = useCustomer();
+
+  // Helper function to check if a model tier has sufficient credits
+  const hasCreditsForTier = React.useCallback(
+    (tier: "LITE" | "PRO" | "PRIME"): boolean => {
+      if (isLoading || !customer?.meters) return tier === "LITE"; // Allow LITE models by default when loading or no data
+
+      const meterName = METERS_NAMES[tier];
+      const meter = customer.meters.find((m) => m.name === meterName);
+      return meter ? meter.balance > 0 : tier === "LITE"; // Allow LITE if no meter found
+    },
+    [customer?.meters, isLoading],
+  );
+
+  // Check if a specific model is disabled due to insufficient credits
+  const isModelDisabled = React.useCallback(
+    (modelId: string): boolean => {
+      if (isLoading) return false; // Don't disable during loading
+      const tier = getModelTier(modelId);
+      return !hasCreditsForTier(tier);
+    },
+    [hasCreditsForTier, isLoading],
+  );
 
   return (
     <div className="space-y-2">
@@ -71,9 +109,28 @@ export function ModelSelect({
                       🧠
                     </div>
                   )}
-                  <span className="font-mono text-sm truncate text-left">
-                    {selected.name ?? selected.canonical_id}
-                  </span>
+                  <div className="flex-1 min-w-0">
+                    <span
+                      className={cn(
+                        "font-mono text-sm truncate text-left block",
+                        isModelDisabled(selected.canonical_id) &&
+                          "text-red-400",
+                      )}
+                    >
+                      {selected.name ?? selected.canonical_id}
+                      {isModelDisabled(selected.canonical_id) && " 🚫"}
+                    </span>
+                    {isModelDisabled(selected.canonical_id) && !isLoading && (
+                      <span className="text-xs text-red-400/70 block">
+                        Insufficient credits
+                      </span>
+                    )}
+                    {isLoading && (
+                      <span className="text-xs text-gray-400/70 block">
+                        Loading credits...
+                      </span>
+                    )}
+                  </div>
                 </>
               ) : (
                 <span className="font-mono text-sm opacity-70">
@@ -95,50 +152,97 @@ export function ModelSelect({
                 No model found.
               </CommandEmpty>
               <CommandGroup>
-                {items.map((model) => (
-                  <CommandItem
-                    key={model.canonical_id}
-                    value={model.canonical_id}
-                    onSelect={(currentValue) => {
-                      onChange(currentValue === value ? "" : currentValue);
-                      setOpen(false);
-                    }}
-                    className="terminal-text hover:bg-primary/20 cursor-pointer"
-                  >
-                    <div className="flex items-center gap-3 flex-1 min-w-0">
-                      {model.logo_url ? (
-                        // biome-ignore lint/performance/noImgElement: ok
-                        <img
-                          src={model.logo_url}
-                          alt={model.name ?? model.canonical_id}
-                          className="h-5 w-5 rounded shrink-0"
-                        />
-                      ) : (
-                        <div className="h-5 w-5 rounded bg-terminal-border flex items-center justify-center text-xs opacity-70 shrink-0">
-                          🧠
-                        </div>
+                {items.map((model) => {
+                  const disabled = isModelDisabled(model.canonical_id);
+                  const tier = getModelTier(model.canonical_id);
+                  const credits =
+                    !isLoading && customer?.meters
+                      ? (customer.meters.find(
+                          (m) => m.name === METERS_NAMES[tier],
+                        )?.balance ?? 0)
+                      : 0;
+
+                  return (
+                    <CommandItem
+                      key={model.canonical_id}
+                      value={model.canonical_id}
+                      onSelect={(currentValue) => {
+                        if (!disabled) {
+                          onChange(currentValue === value ? "" : currentValue);
+                          setOpen(false);
+                        }
+                      }}
+                      className={cn(
+                        "terminal-text cursor-pointer",
+                        disabled
+                          ? "opacity-50 cursor-not-allowed hover:bg-transparent"
+                          : "hover:bg-primary/20",
                       )}
-                      <div className="flex-1 text-left min-w-0">
-                        <div className="font-mono text-sm truncate">
-                          {model.name ?? model.canonical_id}
-                        </div>
-                        {model.description && (
-                          <div className="text-xs opacity-70 line-clamp-1">
-                            {model.description}
+                      disabled={disabled}
+                    >
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        {model.logo_url ? (
+                          // biome-ignore lint/performance/noImgElement: ok
+                          <img
+                            src={model.logo_url}
+                            alt={model.name ?? model.canonical_id}
+                            className="h-5 w-5 rounded shrink-0"
+                          />
+                        ) : (
+                          <div className="h-5 w-5 rounded bg-terminal-border flex items-center justify-center text-xs opacity-70 shrink-0">
+                            🧠
                           </div>
                         )}
+                        <div className="flex-1 text-left min-w-0">
+                          <div className="font-mono text-sm truncate">
+                            {model.name ?? model.canonical_id}{" "}
+                            {tier === "PRO" && "🔥 PRO"}
+                            {tier === "PRIME" && "🌟 PRIME"}
+                            {disabled && " 🚫"}
+                          </div>
+                          <div className="text-xs opacity-70 line-clamp-1">
+                            {disabled ? (
+                              <span className="text-red-400">
+                                Insufficient credits ({credits} remaining)
+                              </span>
+                            ) : isLoading ? (
+                              <span className="text-gray-400">
+                                Loading credits...
+                              </span>
+                            ) : (
+                              <>
+                                {tier !== "LITE" && customer?.meters && (
+                                  <span className="text-green-400">
+                                    {credits} {tier} credits
+                                  </span>
+                                )}
+                                {model.description && (
+                                  <span
+                                    className={
+                                      tier !== "LITE" && customer?.meters
+                                        ? "ml-2"
+                                        : ""
+                                    }
+                                  >
+                                    {model.description}
+                                  </span>
+                                )}
+                              </>
+                            )}
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                    <Check
-                      className={cn(
-                        "ml-2 h-4 w-4",
-                        value === model.canonical_id
-                          ? "opacity-100"
-                          : "opacity-0",
-                      )}
-                    />
-                  </CommandItem>
-                ))}
+                      <Check
+                        className={cn(
+                          "ml-2 h-4 w-4",
+                          value === model.canonical_id
+                            ? "opacity-100"
+                            : "opacity-0",
+                        )}
+                      />
+                    </CommandItem>
+                  );
+                })}
               </CommandGroup>
             </CommandList>
           </Command>

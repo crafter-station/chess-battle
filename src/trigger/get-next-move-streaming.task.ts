@@ -1,7 +1,20 @@
+import { Polar } from "@polar-sh/sdk";
 import { logger, metadata, schemaTask } from "@trigger.dev/sdk";
 import { simulateReadableStream, streamText } from "ai";
 import { Chess } from "chess.js";
 import { z } from "zod";
+
+import { PRIME_MODELS, PRO_MODELS } from "@/lib/models";
+import { METERS_NAMES } from "@/lib/product-name";
+
+if (!process.env.POLAR_ACCESS_TOKEN) {
+  throw new Error("POLAR_ACCESS_TOKEN is not set");
+}
+
+const polar = new Polar({
+  accessToken: process.env.POLAR_ACCESS_TOKEN,
+  server: process.env.NODE_ENV === "development" ? "sandbox" : "production",
+});
 
 // Interface for streaming result (both real and simulated)
 interface StreamingResult {
@@ -233,6 +246,7 @@ export const GetNextMoveStreamingTask = schemaTask({
     whitePlayerModelId: z.string(),
     blackPlayerModelId: z.string(),
     lastInvalidMoves: z.array(z.string()),
+    userId: z.string(),
   }),
   run: async (payload) => {
     const chess = new Chess(payload.board);
@@ -241,6 +255,33 @@ export const GetNextMoveStreamingTask = schemaTask({
       chess.turn() === "w"
         ? payload.whitePlayerModelId
         : payload.blackPlayerModelId;
+
+    let modelType: "LITE" | "PRO" | "PRIME" = "LITE";
+    if (PRO_MODELS.includes(playerModelId as (typeof PRO_MODELS)[number])) {
+      modelType = "PRO";
+    } else if (
+      PRIME_MODELS.includes(playerModelId as (typeof PRIME_MODELS)[number])
+    ) {
+      modelType = "PRIME";
+    }
+
+    // Check if user has enough credits before making the AI call
+    const customerState = await polar.customers.getStateExternal({
+      externalId: payload.userId,
+    });
+
+    const meter = await polar.meters.list({
+      query: METERS_NAMES[modelType],
+    });
+
+    const meterValue =
+      customerState.activeMeters.find(
+        (m) => m.meterId === meter.result.items[0].id,
+      )?.balance ?? 0;
+
+    if (meterValue <= 0) {
+      throw new Error("Not enough credits");
+    }
 
     const start = Date.now();
 
@@ -296,6 +337,19 @@ export const GetNextMoveStreamingTask = schemaTask({
     logger.info("LLM streamed text captured", {
       length: fullText.length,
       hasMove: Boolean(extractedMove),
+    });
+
+    // Track the move generation event for billing
+    await polar.events.ingest({
+      events: [
+        {
+          name: "move_generated",
+          externalCustomerId: payload.userId,
+          metadata: {
+            move: modelType,
+          },
+        },
+      ],
     });
 
     return {

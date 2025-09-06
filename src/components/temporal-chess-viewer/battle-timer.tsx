@@ -81,6 +81,7 @@ export function BattleTimer({ battle, moves }: BattleTimerProps) {
         checkmate: "", // shouldn't happen for draws
         resignation: "", // shouldn't happen for draws
         forfeit_invalid_moves: "", // shouldn't happen for draws
+        forfeit_insufficient_credits: "", // shouldn't happen for draws
       };
 
       const description = reason ? drawReasons[reason] || "" : "";
@@ -102,6 +103,7 @@ export function BattleTimer({ battle, moves }: BattleTimerProps) {
         threefold_repetition: "by Tiebreaker",
         agreement: "by Tiebreaker",
         draw: "by Tiebreaker",
+        forfeit_insufficient_credits: "", // shouldn't happen for draws
       };
 
       const winnerText =

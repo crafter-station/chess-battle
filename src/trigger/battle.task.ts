@@ -149,10 +149,12 @@ export const BattleTask = schemaTask({
                   whitePlayerModelId: battle.whitePlayer.model_id,
                   blackPlayerModelId: battle.blackPlayer.model_id,
                   lastInvalidMoves,
+                  userId: payload.userId,
                 },
                 {
                   maxDuration: battleTimeout.timeout_ms / 1000,
                   tags: [...baseTags, "task:get-next-move-streaming"],
+                  maxAttempts: 0,
                 },
               )
             : await GetNextMoveTask.triggerAndWait(
@@ -161,10 +163,12 @@ export const BattleTask = schemaTask({
                   whitePlayerModelId: battle.whitePlayer.model_id,
                   blackPlayerModelId: battle.blackPlayer.model_id,
                   lastInvalidMoves,
+                  userId: payload.userId,
                 },
                 {
                   maxDuration: battleTimeout.timeout_ms / 1000,
                   tags: [...baseTags, "task:get-next-move"],
+                  maxAttempts: 0,
                 },
               );
 
@@ -177,6 +181,16 @@ export const BattleTask = schemaTask({
             isValid = false;
             reasoning = "Move generation timed out";
             response_time = battleTimeout.timeout_ms;
+          } else if (
+            nextMoveResult.error instanceof Error &&
+            nextMoveResult.error.message.includes("Not enough credits")
+          ) {
+            // Handle insufficient credits - current player forfeits
+            const forfeitingPlayer = `${currentPlayer} (${currentPlayerModelId})`;
+            logger.error(
+              `💳 ${forfeitingPlayer} ran out of credits. Game ends by forfeit.`,
+            );
+            throw new PlayerInsufficientCreditsError(forfeitingPlayer);
           } else {
             throw new BattleError(
               `Failed to get next move for ${currentPlayer}: ${nextMoveResult.error}`,
@@ -199,7 +213,9 @@ export const BattleTask = schemaTask({
             chess.move(moveAttempt);
 
             logger.info(
-              `✅ ${currentPlayer} (${currentPlayerModelId}) Move ${moveNumber}: ${moveAttempt} - Position: ${chess.fen().split(" ")[0]}`,
+              `✅ ${currentPlayer} (${currentPlayerModelId}) Move ${moveNumber}: ${moveAttempt} - Position: ${
+                chess.fen().split(" ")[0]
+              }`,
             );
 
             // Clear invalid moves on successful move
@@ -273,7 +289,11 @@ export const BattleTask = schemaTask({
         // Handle too many invalid moves with fallback strategy
         if (lastInvalidMoves.length >= CONFIG.MAX_INVALID_MOVES) {
           logger.warn(
-            `🤖 ${currentPlayer} (${currentPlayerModelId}) exceeded ${CONFIG.MAX_INVALID_MOVES} invalid moves: [${lastInvalidMoves.join(", ")}]. Making random move as fallback.`,
+            `🤖 ${currentPlayer} (${currentPlayerModelId}) exceeded ${
+              CONFIG.MAX_INVALID_MOVES
+            } invalid moves: [${lastInvalidMoves.join(
+              ", ",
+            )}]. Making random move as fallback.`,
           );
 
           const availableMoves = chess.moves();
@@ -287,7 +307,9 @@ export const BattleTask = schemaTask({
           chess.move(randomMove);
 
           logger.info(
-            `🎲 ${currentPlayer} (${currentPlayerModelId}) Random fallback: ${randomMove} - Position: ${chess.fen().split(" ")[0]}`,
+            `🎲 ${currentPlayer} (${currentPlayerModelId}) Random fallback: ${randomMove} - Position: ${
+              chess.fen().split(" ")[0]
+            }`,
           );
 
           // Store the random move
@@ -334,6 +356,22 @@ export const BattleTask = schemaTask({
 
         logger.info(
           `🚫 ${forfeitingPlayer} forfeited due to excessive invalid moves. ${winningPlayer} wins by forfeit.`,
+        );
+      } else if (error instanceof PlayerInsufficientCreditsError) {
+        // Handle player forfeit due to insufficient credits
+        const forfeitingPlayer = chess.turn() === "w" ? "White" : "Black";
+        const winningPlayer = chess.turn() === "w" ? "Black" : "White";
+
+        winner =
+          chess.turn() === "w"
+            ? battle.black_player_id
+            : battle.white_player_id;
+        winnerColor = chess.turn() === "w" ? "black" : "white";
+        outcome = "win";
+        gameEndReason = "forfeit_insufficient_credits";
+
+        logger.info(
+          `💳 ${forfeitingPlayer} forfeited due to insufficient credits. ${winningPlayer} wins by forfeit.`,
         );
       } else if (error instanceof GameTimeoutError) {
         // Handle timeout - determine winner based on time efficiency
@@ -473,7 +511,9 @@ export const BattleTask = schemaTask({
     });
 
     logger.info(
-      `🏁 Battle completed: ${outcome === "win" ? "Decisive result" : "Draw"} - ${
+      `🏁 Battle completed: ${
+        outcome === "win" ? "Decisive result" : "Draw"
+      } - ${
         winner
           ? `${winnerColor === "white" ? "White" : "Black"} (${
               winnerColor === "white"
@@ -552,6 +592,15 @@ class PlayerForfeitError extends BattleError {
   }
 }
 
+class PlayerInsufficientCreditsError extends BattleError {
+  constructor(playerName: string) {
+    super(
+      `${playerName} forfeited due to insufficient credits`,
+      "PLAYER_INSUFFICIENT_CREDITS",
+    );
+  }
+}
+
 /**
  * Calculates time efficiency and determines winner based on average response times
  */
@@ -623,7 +672,11 @@ async function determineWinnerByTimeEfficiency(
           winnerColor === "white"
             ? battle.whitePlayer.model_id
             : battle.blackPlayer.model_id
-        }) wins by ${context === "timeout" ? "time efficiency" : "faster average response time"} (${
+        }) wins by ${
+          context === "timeout"
+            ? "time efficiency"
+            : "faster average response time"
+        } (${
           winnerColor === "white"
             ? avgResponseTimeWhite.toFixed(0)
             : avgResponseTimeBlack.toFixed(0)

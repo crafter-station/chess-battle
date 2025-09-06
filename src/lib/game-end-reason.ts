@@ -6,6 +6,7 @@ export const GAME_END_REASONS = [
   "timeout",
   "agreement",
   "forfeit_invalid_moves",
+  "forfeit_insufficient_credits",
   "insufficient_material",
   "threefold_repetition",
 ] as const;

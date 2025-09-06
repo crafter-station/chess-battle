@@ -2,7 +2,11 @@ import { currentUser } from "@clerk/nextjs/server";
 import { Polar } from "@polar-sh/sdk";
 import type { CustomerState } from "@polar-sh/sdk/models/components/customerstate.js";
 
-import { FREE_BENEFIT_NAME, PRODUCT_NAME } from "@/lib/product-name";
+import {
+  FREE_BENEFIT_NAME,
+  METERS_NAMES,
+  PRODUCT_NAME,
+} from "@/lib/product-name";
 
 if (!process.env.POLAR_ACCESS_TOKEN) {
   throw new Error("POLAR_ACCESS_TOKEN is not set");
@@ -87,33 +91,22 @@ export async function GET() {
       (benefit) => benefit.benefitId === freeBenefit.id,
     );
 
-    const products = await polar.products.list({
-      query: PRODUCT_NAME,
+    const metersList = await polar.meters.list({
+      query: "Moves",
     });
 
-    console.log(JSON.stringify(customer, null, 2));
+    const meters: { id: string; name: string; balance: number }[] = [];
 
-    console.log(JSON.stringify(products.result.items, null, 2));
-
-    const product = products.result.items[0];
-
-    const meters = product.benefits;
-
-    const userMeters: { id: string; name: string; balance: number }[] = [];
-
-    if (customer) {
-      for (const userMeter of customer.activeMeters) {
-        const meterData = meters.find(
-          // @ts-expect-error
-          (m) => m.properties.meterId === userMeter.meterId,
-        );
-        if (meterData) {
-          userMeters.push({
-            id: userMeter.id,
-            name: meterData.description,
-            balance: userMeter.balance,
-          });
-        }
+    for (const meter of metersList.result.items) {
+      const meterData = customer.activeMeters.find(
+        (m) => m.meterId === meter.id,
+      );
+      if (meterData) {
+        meters.push({
+          id: meter.id,
+          name: meter.name,
+          balance: meterData.balance,
+        });
       }
     }
 
@@ -123,7 +116,7 @@ export async function GET() {
         data: {
           userId: user.id,
           freeBenefitGranted: freeBenefitGranted,
-          meters: userMeters,
+          meters: meters,
           isCustomer: customer !== null,
         },
       } satisfies CustomerResult),

@@ -1,4 +1,6 @@
 export const LITE_MODELS = [
+  "alibaba/qwen-3-30b",
+  "mistral/devstral-small",
   "mistral/ministral-3b",
   "mistral/ministral-8b",
   "amazon/nova-micro",
@@ -77,8 +79,6 @@ export const PRIME_MODELS = [
   "anthropic/claude-3-opus",
   "anthropic/claude-opus-4.1",
   "anthropic/claude-opus-4",
-  "alibaba/qwen-3-30b",
-  "mistral/devstral-small",
 ] as const;
 
 export const MODELS = [...LITE_MODELS, ...PRO_MODELS, ...PRIME_MODELS] as const;

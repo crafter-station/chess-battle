@@ -149,10 +149,12 @@ export const BattleTask = schemaTask({
                   whitePlayerModelId: battle.whitePlayer.model_id,
                   blackPlayerModelId: battle.blackPlayer.model_id,
                   lastInvalidMoves,
+                  userId: payload.userId,
                 },
                 {
                   maxDuration: battleTimeout.timeout_ms / 1000,
                   tags: [...baseTags, "task:get-next-move-streaming"],
+                  maxAttempts: 0,
                 },
               )
             : await GetNextMoveTask.triggerAndWait(
@@ -166,6 +168,7 @@ export const BattleTask = schemaTask({
                 {
                   maxDuration: battleTimeout.timeout_ms / 1000,
                   tags: [...baseTags, "task:get-next-move"],
+                  maxAttempts: 0,
                 },
               );
 
@@ -178,6 +181,16 @@ export const BattleTask = schemaTask({
             isValid = false;
             reasoning = "Move generation timed out";
             response_time = battleTimeout.timeout_ms;
+          } else if (
+            nextMoveResult.error instanceof Error &&
+            nextMoveResult.error.message.includes("Not enough credits")
+          ) {
+            // Handle insufficient credits - current player forfeits
+            const forfeitingPlayer = `${currentPlayer} (${currentPlayerModelId})`;
+            logger.error(
+              `💳 ${forfeitingPlayer} ran out of credits. Game ends by forfeit.`,
+            );
+            throw new PlayerInsufficientCreditsError(forfeitingPlayer);
           } else {
             throw new BattleError(
               `Failed to get next move for ${currentPlayer}: ${nextMoveResult.error}`,
@@ -343,6 +356,22 @@ export const BattleTask = schemaTask({
 
         logger.info(
           `🚫 ${forfeitingPlayer} forfeited due to excessive invalid moves. ${winningPlayer} wins by forfeit.`,
+        );
+      } else if (error instanceof PlayerInsufficientCreditsError) {
+        // Handle player forfeit due to insufficient credits
+        const forfeitingPlayer = chess.turn() === "w" ? "White" : "Black";
+        const winningPlayer = chess.turn() === "w" ? "Black" : "White";
+
+        winner =
+          chess.turn() === "w"
+            ? battle.black_player_id
+            : battle.white_player_id;
+        winnerColor = chess.turn() === "w" ? "black" : "white";
+        outcome = "win";
+        gameEndReason = "forfeit_insufficient_credits";
+
+        logger.info(
+          `💳 ${forfeitingPlayer} forfeited due to insufficient credits. ${winningPlayer} wins by forfeit.`,
         );
       } else if (error instanceof GameTimeoutError) {
         // Handle timeout - determine winner based on time efficiency
@@ -559,6 +588,15 @@ class PlayerForfeitError extends BattleError {
     super(
       `${playerName} forfeited due to ${invalidMoveCount} invalid moves`,
       "PLAYER_FORFEIT",
+    );
+  }
+}
+
+class PlayerInsufficientCreditsError extends BattleError {
+  constructor(playerName: string) {
+    super(
+      `${playerName} forfeited due to insufficient credits`,
+      "PLAYER_INSUFFICIENT_CREDITS",
     );
   }
 }

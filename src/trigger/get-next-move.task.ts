@@ -10,6 +10,7 @@ import { z } from "zod";
 
 import { MOCK_RESPONSE, MOCK_RESPONSE_REASONING } from "@/lib/mock-responses";
 import { PRIME_MODELS, PRO_MODELS } from "@/lib/models";
+import { METERS_NAMES } from "@/lib/product-name";
 
 if (!process.env.POLAR_ACCESS_TOKEN) {
   throw new Error("POLAR_ACCESS_TOKEN is not set");
@@ -68,7 +69,26 @@ export const GetNextMoveTask = schemaTask({
       modelType = "PRIME";
     }
 
+    logger.info(`Model type: ${modelType}`);
+
     // TODO: validate if the user has enough credits to make the move
+
+    const customerState = await polar.customers.getStateExternal({
+      externalId: payload.userId,
+    });
+
+    const liteMeter = await polar.meters.list({
+      query: METERS_NAMES[modelType],
+    });
+
+    const liteMeterValue =
+      customerState.activeMeters.find(
+        (m) => m.meterId === liteMeter.result.items[0].id,
+      )?.balance ?? 0;
+
+    if (liteMeterValue <= 0) {
+      throw new Error("Not enough credits");
+    }
 
     const initialTime = Date.now();
 

@@ -31,8 +31,26 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useCurrentMove } from "@/hooks/use-current-move";
 import { useMoves } from "@/hooks/use-moves";
 
+// Collapsible indicator component
+const CollapsibleIndicator = ({ isOpen }: { isOpen: boolean }) => (
+  <span
+    className={`terminal-text text-xs opacity-50 transition-transform duration-200 ${
+      isOpen ? "rotate-180" : "rotate-0"
+    }`}
+  >
+    ▼
+  </span>
+);
+
 export function TemporalChessViewer() {
   const { battle_id } = useParams<{ battle_id: string }>();
+
+  // Collapsible states for sidebar sections
+  const [battleStatusOpen, setBattleStatusOpen] = React.useState(true);
+  const [gameResultOpen, setGameResultOpen] = React.useState(false);
+  const [navigationOpen, setNavigationOpen] = React.useState(true);
+  const [moveInfoOpen, setMoveInfoOpen] = React.useState(false);
+  const [moveHistoryOpen, setMoveHistoryOpen] = React.useState(false);
 
   const { data: battleData } = useLiveQuery(
     (q) =>
@@ -69,6 +87,13 @@ export function TemporalChessViewer() {
 
   const battle = battleData?.[0];
 
+  // Auto-open game result when battle is finished
+  React.useEffect(() => {
+    if (battle?.outcome) {
+      setGameResultOpen(true);
+    }
+  }, [battle?.outcome]);
+
   if (!battle) {
     return (
       <div className="flex items-center justify-center h-96 terminal-card rounded-lg">
@@ -82,7 +107,7 @@ export function TemporalChessViewer() {
   return (
     <div className="h-full flex flex-col lg:flex-row overflow-hidden">
       {/* Main Content Area */}
-      <div className="flex flex-col p-2 sm:p-3 lg:p-4 min-w-0 lg:flex-1 lg:min-h-0 overflow-y-auto lg:overflow-hidden">
+      <div className="flex flex-col p-2 sm:p-3 lg:p-4 min-w-0 lg:flex-1 lg:min-h-0 overflow-y-auto lg:overflow-y-hidden">
         <Tabs defaultValue="board" className="flex flex-col lg:flex-1">
           <TabsList className="grid w-full grid-cols-3 mb-2 lg:mb-4">
             <TabsTrigger value="board" className="text-xs lg:text-sm font-mono">
@@ -104,7 +129,7 @@ export function TemporalChessViewer() {
 
           <TabsContent
             value="board"
-            className="flex flex-col mt-0 gap-1 sm:gap-2 lg:gap-4 lg:flex-1"
+            className="flex flex-col mt-0 gap-1 sm:gap-2 lg:gap-3 lg:flex-1 lg:min-h-0"
           >
             {/* Black Player - Responsive */}
             {battle.black_player?.id && (
@@ -117,9 +142,9 @@ export function TemporalChessViewer() {
               </div>
             )}
 
-            {/* Chess Board Container - Fixed height on mobile */}
-            <div className="flex items-center justify-center py-2">
-              <div className="aspect-square w-full max-w-[min(100vw-2rem,300px)] sm:max-w-[min(100vw-4rem,400px)] lg:max-w-[min(50vw,calc(100vh-12rem))]">
+            {/* Chess Board Container - Fixed height on mobile, flex on desktop */}
+            <div className="flex items-center justify-center py-2 lg:flex-1 lg:min-h-0">
+              <div className="aspect-square w-full max-w-[min(100vw-2rem,300px)] sm:max-w-[min(100vw-4rem,400px)] lg:max-w-[min(50vw,60vh)]">
                 <ChessBoard />
               </div>
             </div>
@@ -417,51 +442,120 @@ export function TemporalChessViewer() {
       </div>
 
       {/* Desktop Sidebar */}
-      <div className="hidden lg:flex w-80 xl:w-96 flex-shrink-0 border-l border-terminal-border bg-black/10 flex-col overflow-hidden">
-        {/* Battle Status - Always Visible */}
-        <div className="flex-shrink-0 p-4 border-b border-terminal-border/30">
-          <BattleTimer
-            battle={{
-              ...battle,
-              game_end_reason: battle.game_end_reason as GameEndReason | null,
-            }}
-            moves={moves}
-          />
+      <div className="hidden lg:flex w-80 xl:w-96 flex-shrink-0 border-l border-terminal-border bg-black/10 flex-col">
+        {/* Scrollable Content Area */}
+        <div className="flex-1 overflow-y-auto min-h-0">
+          <div className="space-y-2 p-0">
+            {/* Battle Status - Collapsible */}
+            <Collapsible
+              open={battleStatusOpen}
+              onOpenChange={setBattleStatusOpen}
+            >
+              <CollapsibleTrigger asChild>
+                <div className="flex items-center justify-between p-3 hover:bg-black/20 cursor-pointer border-b border-terminal-border/30">
+                  <span className="terminal-text text-xs font-mono terminal-glow">
+                    ⏱️ BATTLE STATUS
+                  </span>
+                  <CollapsibleIndicator isOpen={battleStatusOpen} />
+                </div>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <div className="p-4 border-b border-terminal-border/30">
+                  <BattleTimer
+                    battle={{
+                      ...battle,
+                      game_end_reason:
+                        battle.game_end_reason as GameEndReason | null,
+                    }}
+                    moves={moves}
+                  />
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
+
+            {/* Game Result - Collapsible */}
+            <Collapsible open={gameResultOpen} onOpenChange={setGameResultOpen}>
+              <CollapsibleTrigger asChild>
+                <div className="flex items-center justify-between p-3 hover:bg-black/20 cursor-pointer border-b border-terminal-border/30">
+                  <span className="terminal-text text-xs font-mono terminal-glow">
+                    🏆 GAME RESULT
+                  </span>
+                  <CollapsibleIndicator isOpen={gameResultOpen} />
+                </div>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <div className="border-b border-terminal-border/30">
+                  <GameResult
+                    outcome={battle.outcome}
+                    winner={battle.winner}
+                    gameEndReason={
+                      battle.game_end_reason as GameEndReason | null
+                    }
+                    whitePlayerModel={battle.white_player?.model_id}
+                    blackPlayerModel={battle.black_player?.model_id}
+                  />
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
+
+            {/* Navigation - Collapsible */}
+            <Collapsible open={navigationOpen} onOpenChange={setNavigationOpen}>
+              <CollapsibleTrigger asChild>
+                <div className="flex items-center justify-between p-3 hover:bg-black/20 cursor-pointer border-b border-terminal-border/30">
+                  <span className="terminal-text text-xs font-mono terminal-glow">
+                    🎮 NAVIGATION
+                  </span>
+                  <CollapsibleIndicator isOpen={navigationOpen} />
+                </div>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <div className="p-4 border-b border-terminal-border/30">
+                  <NavigationControls />
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
+
+            {/* Move Info - Collapsible */}
+            <Collapsible open={moveInfoOpen} onOpenChange={setMoveInfoOpen}>
+              <CollapsibleTrigger asChild>
+                <div className="flex items-center justify-between p-3 hover:bg-black/20 cursor-pointer border-b border-terminal-border/30">
+                  <span className="terminal-text text-xs font-mono terminal-glow">
+                    📋 MOVE INFO
+                  </span>
+                  <CollapsibleIndicator isOpen={moveInfoOpen} />
+                </div>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <div className="p-4 border-b border-terminal-border/30">
+                  <MoveInfo />
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
+
+            {/* Move History - Collapsible */}
+            <Collapsible
+              open={moveHistoryOpen}
+              onOpenChange={setMoveHistoryOpen}
+            >
+              <CollapsibleTrigger asChild>
+                <div className="flex items-center justify-between p-3 hover:bg-black/20 cursor-pointer border-b border-terminal-border/30">
+                  <span className="terminal-text text-xs font-mono terminal-glow">
+                    📚 MOVE HISTORY
+                  </span>
+                  <CollapsibleIndicator isOpen={moveHistoryOpen} />
+                </div>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <div className="border-b border-terminal-border/30">
+                  <MoveHistory />
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
+          </div>
         </div>
 
-        {/* Game Result - If exists */}
-        <div className="flex-shrink-0">
-          <GameResult
-            outcome={battle.outcome}
-            winner={battle.winner}
-            gameEndReason={battle.game_end_reason as GameEndReason | null}
-            whitePlayerModel={battle.white_player?.model_id}
-            blackPlayerModel={battle.black_player?.model_id}
-          />
-        </div>
-
-        {/* Navigation - Always Accessible */}
-        <div className="flex-shrink-0 p-4 border-y border-terminal-border/30">
-          <NavigationControls />
-        </div>
-
-        {/* Move Info & History - Scrollable */}
-        <div className="flex-1 overflow-hidden">
-          <ScrollArea className="h-full">
-            <div className="space-y-4">
-              <div className="p-4 pb-2">
-                <MoveInfo />
-              </div>
-
-              <div className="border-t border-terminal-border/30">
-                <MoveHistory />
-              </div>
-            </div>
-          </ScrollArea>
-        </div>
-
-        {/* Battle Timeout - Bottom */}
-        <div className="flex-shrink-0 p-4 border-t border-terminal-border/30">
+        {/* Battle Timeout - Always Visible at Bottom */}
+        <div className="flex-shrink-0 p-4 border-t border-terminal-border/30 bg-black/20">
           <BattleTimeout />
         </div>
       </div>

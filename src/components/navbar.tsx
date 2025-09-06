@@ -5,8 +5,6 @@ import { useState } from "react";
 
 import { SignedIn, SignedOut, SignInButton, UserButton } from "@clerk/nextjs";
 
-import { CreditsButton } from "./credits-button";
-
 export function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -62,6 +60,14 @@ export function Navbar() {
           >
             LEADERBOARD
           </Link>
+          <a
+            href="https://github.com/crafter-station/chess-battle"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="terminal-text text-xs hover:text-primary transition-colors px-2 py-1 rounded border border-transparent hover:border-primary/30"
+          >
+            GITHUB
+          </a>
 
           {/* Desktop Auth */}
           <div className="flex items-center ml-2">
@@ -76,7 +82,6 @@ export function Navbar() {
               </SignInButton>
             </SignedOut>
             <SignedIn>
-              <CreditsButton />
               <UserButton
                 appearance={{
                   elements: {
@@ -111,7 +116,6 @@ export function Navbar() {
               </SignInButton>
             </SignedOut>
             <SignedIn>
-              <CreditsButton />
               <UserButton
                 appearance={{
                   elements: {
@@ -176,6 +180,15 @@ export function Navbar() {
             >
               LEADERBOARD
             </Link>
+            <a
+              href="https://github.com/crafter-station/chess-battle"
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => setMobileMenuOpen(false)}
+              className="block terminal-text text-xs hover:text-primary transition-colors px-3 py-2 rounded border border-transparent hover:border-primary/30"
+            >
+              GITHUB
+            </a>
           </nav>
         </div>
       )}

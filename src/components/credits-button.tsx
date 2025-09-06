@@ -2,8 +2,6 @@
 
 import Link from "next/link";
 
-import { useUser } from "@clerk/nextjs";
-
 import { useCustomer } from "@/hooks/use-customer";
 import { Button } from "./ui/button";
 import {
@@ -31,7 +29,9 @@ export function CreditsButton() {
         <DropdownMenuLabel>Credits</DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem>
-          <Link href="/checkout">Buy Credits</Link>
+          <Link href="/checkout">
+            {customer.freeBenefitGranted ? "Buy Credits" : "Get Free Credits"}
+          </Link>
         </DropdownMenuItem>
         {customer.isCustomer && (
           <DropdownMenuItem>

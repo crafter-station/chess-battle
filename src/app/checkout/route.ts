@@ -1,7 +1,13 @@
-import { currentUser } from "@clerk/nextjs/server";
+import { auth } from "@clerk/nextjs/server";
 import { Polar } from "@polar-sh/sdk";
 
-import { PRODUCT_NAME } from "@/lib/product-name";
+import { nanoid } from "@/lib/nanoid";
+import {
+  FREE_BENEFIT_NAME,
+  FREE_DISCOUNT_CODE,
+  FREE_PRODUCT_NAME,
+  PRODUCT_NAME,
+} from "@/lib/product-name";
 
 if (!process.env.POLAR_ACCESS_TOKEN) {
   throw new Error("POLAR_ACCESS_TOKEN is not set");
@@ -17,27 +23,71 @@ const polar = new Polar({
 });
 
 export const GET = async () => {
-  const user = await currentUser();
-  if (!user) {
+  const session = await auth();
+  if (!session?.userId) {
     return Response.redirect(new URL("/sign-in", process.env.NEXT_PUBLIC_URL));
   }
-  const products = await polar.products.list({
-    query: PRODUCT_NAME,
+
+  const freeBenefits = await polar.benefits.list({
+    query: FREE_BENEFIT_NAME,
+  });
+  const freeBenefit = freeBenefits.result.items[0];
+
+  const customerState = await polar.customers.getStateExternal({
+    externalId: session.userId,
   });
 
-  const product = products.result.items[0];
+  let checkoutUrl = process.env.NEXT_PUBLIC_URL;
 
-  const productId = product.id;
+  if (
+    customerState.grantedBenefits.find(
+      (benefit) => benefit.benefitId === freeBenefit.id,
+    )
+  ) {
+    const products = await polar.products.list({
+      query: PRODUCT_NAME,
+    });
 
-  const result = await polar.checkouts.create({
-    products: [productId],
-    successUrl: process.env.NEXT_PUBLIC_URL,
-    externalCustomerId: user.id,
-    customerEmail: user.primaryEmailAddress?.emailAddress,
-    customerName: user.fullName,
-  });
+    const product = products.result.items[0];
 
-  const urlToRedirectTo = result.url;
+    const productId = product.id;
 
-  return Response.redirect(urlToRedirectTo);
+    const result = await polar.checkouts.create({
+      products: [productId],
+      successUrl: process.env.NEXT_PUBLIC_URL,
+      externalCustomerId: session.userId,
+    });
+
+    checkoutUrl = result.url;
+  } else {
+    const products = await polar.products.list({
+      query: FREE_PRODUCT_NAME,
+    });
+
+    const product = products.result.items[0];
+
+    const productId = product.id;
+
+    const code = nanoid();
+    const discount = await polar.discounts.create({
+      type: "percentage",
+      basisPoints: 10000,
+      products: [productId],
+      name: FREE_DISCOUNT_CODE,
+      code: code,
+      duration: "forever",
+      maxRedemptions: 1,
+    });
+
+    const result = await polar.checkouts.create({
+      products: [productId],
+      successUrl: process.env.NEXT_PUBLIC_URL,
+      externalCustomerId: session.userId,
+      discountId: discount.id,
+    });
+
+    checkoutUrl = result.url;
+  }
+
+  return Response.redirect(checkoutUrl);
 };

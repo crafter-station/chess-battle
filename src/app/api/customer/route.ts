@@ -1,8 +1,8 @@
-import { auth } from "@clerk/nextjs/server";
+import { currentUser } from "@clerk/nextjs/server";
 import { Polar } from "@polar-sh/sdk";
 import type { CustomerState } from "@polar-sh/sdk/models/components/customerstate.js";
 
-import { PRODUCT_NAME } from "@/lib/product-name";
+import { FREE_BENEFIT_NAME, PRODUCT_NAME } from "@/lib/product-name";
 
 if (!process.env.POLAR_ACCESS_TOKEN) {
   throw new Error("POLAR_ACCESS_TOKEN is not set");
@@ -14,8 +14,8 @@ const polar = new Polar({
 
 type SuccessResult = {
   userId: string;
-  productId: string;
   meters: { id: string; name: string; balance: number }[];
+  freeBenefitGranted: boolean;
   isCustomer: boolean;
 };
 
@@ -35,9 +35,9 @@ export type CustomerResult =
 
 export async function GET() {
   try {
-    const session = await auth();
+    const user = await currentUser();
 
-    if (!session?.userId) {
+    if (!user?.id) {
       return new Response(
         JSON.stringify({
           success: false,
@@ -54,27 +54,48 @@ export async function GET() {
 
     try {
       customer = await polar.customers.getStateExternal({
-        externalId: session.userId,
+        externalId: user.id,
       });
     } catch (error) {
       if (error instanceof Error) {
         if (error.message.includes("Not found")) {
-          customer = null;
-        } else {
-          throw error;
+          const createdCustomer = await polar.customers.create({
+            externalId: user.id,
+            email: user.emailAddresses[0].emailAddress,
+            name: user.fullName,
+          });
+
+          customer = await polar.customers.getState({
+            id: createdCustomer.id,
+          });
         }
       } else {
         throw error;
       }
     }
 
+    if (!customer) {
+      throw new Error("Customer not found");
+    }
+
+    const freeBenefits = await polar.benefits.list({
+      query: FREE_BENEFIT_NAME,
+    });
+    const freeBenefit = freeBenefits.result.items[0];
+
+    const freeBenefitGranted = customer.grantedBenefits.some(
+      (benefit) => benefit.benefitId === freeBenefit.id,
+    );
+
     const products = await polar.products.list({
       query: PRODUCT_NAME,
     });
 
-    const product = products.result.items[0];
+    console.log(JSON.stringify(customer, null, 2));
 
-    const productId = product.id;
+    console.log(JSON.stringify(products.result.items, null, 2));
+
+    const product = products.result.items[0];
 
     const meters = product.benefits;
 
@@ -100,8 +121,8 @@ export async function GET() {
       JSON.stringify({
         success: true,
         data: {
-          userId: session.userId,
-          productId: productId,
+          userId: user.id,
+          freeBenefitGranted: freeBenefitGranted,
           meters: userMeters,
           isCustomer: customer !== null,
         },

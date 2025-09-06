@@ -45,12 +45,14 @@ export default function RootLayout({
           />
         </head>
         <body
-          className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased`}
+          className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased flex flex-col min-h-screen`}
         >
           <Providers>
             <MergeOnSignin />
             <Navbar />
-            <NuqsAdapter>{children}</NuqsAdapter>
+            <main className="flex-1">
+              <NuqsAdapter>{children}</NuqsAdapter>
+            </main>
             <CrtToggle />
             <Toaster />
           </Providers>

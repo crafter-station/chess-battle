@@ -4,7 +4,6 @@ import { useParams } from "next/navigation";
 import * as React from "react";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 
 import { useAudio } from "@/hooks/use-audio";
@@ -213,83 +212,82 @@ export function NavigationControls() {
   }, []);
 
   return (
-    <Card className="terminal-card terminal-border">
-      <CardHeader>
-        <CardTitle className="terminal-text text-sm">NAVIGATION</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="grid grid-cols-2 gap-2">
-          <Button
-            onClick={goToStart}
-            disabled={moveIndex === 0}
-            variant="outline"
-            className="terminal-button terminal-text"
-          >
-            START
-          </Button>
-          <Button
-            onClick={goToEnd}
-            disabled={moveIndex === moves.length}
-            variant="outline"
-            className="terminal-button terminal-text"
-          >
-            END
-          </Button>
-          <Button
-            onClick={goToPreviousMove}
-            disabled={moveIndex === 0}
-            variant="outline"
-            className="terminal-button terminal-text"
-          >
-            ⬅️ PREV
-          </Button>
-          <Button
-            onClick={goToNextMove}
-            disabled={moveIndex === moves.length}
-            variant="outline"
-            className="terminal-button terminal-text"
-          >
-            NEXT ➡️
-          </Button>
-        </div>
+    <div className="space-y-3">
+      <div className="terminal-text text-xs terminal-glow font-mono opacity-70">
+        NAVIGATION
+      </div>
 
-        <div className="space-y-2">
-          <div className="flex justify-between text-xs terminal-text opacity-70">
-            <span>POS: {String(moveIndex).padStart(3, "0")}</span>
-            <span>
-              END: {String(Math.max(0, moves.length)).padStart(3, "0")}
-            </span>
+      <div className="grid grid-cols-4 gap-1">
+        <Button
+          onClick={goToStart}
+          disabled={moveIndex === 0}
+          variant="outline"
+          size="sm"
+          className="terminal-button terminal-text text-xs font-mono px-2 py-1 h-8"
+        >
+          START
+        </Button>
+        <Button
+          onClick={goToPreviousMove}
+          disabled={moveIndex === 0}
+          variant="outline"
+          size="sm"
+          className="terminal-button terminal-text text-xs font-mono px-2 py-1 h-8"
+        >
+          ⬅ PREV
+        </Button>
+        <Button
+          onClick={goToNextMove}
+          disabled={moveIndex === moves.length}
+          variant="outline"
+          size="sm"
+          className="terminal-button terminal-text text-xs font-mono px-2 py-1 h-8"
+        >
+          NEXT ➡
+        </Button>
+        <Button
+          onClick={goToEnd}
+          disabled={moveIndex === moves.length}
+          variant="outline"
+          size="sm"
+          className="terminal-button terminal-text text-xs font-mono px-2 py-1 h-8"
+        >
+          END
+        </Button>
+      </div>
+
+      <div className="space-y-2">
+        {showNumberInput && (
+          <div className="text-center text-xs terminal-text bg-blue-900/20 border border-blue-500/30 rounded px-2 py-1">
+            <span className="opacity-70">Jump: </span>
+            <span className="font-mono text-blue-400">{numberBuffer}</span>
+            <span className="opacity-50 text-[10px] ml-1">(Enter/Esc)</span>
           </div>
-          {showNumberInput && (
-            <div className="text-center text-sm terminal-text bg-blue-900/20 border border-blue-500/30 rounded px-2 py-1">
-              <span className="opacity-70">Jump to: </span>
-              <span className="font-mono text-blue-400">{numberBuffer}</span>
-              <span className="opacity-50 text-xs ml-2">
-                (Enter to go, Esc to cancel)
-              </span>
-            </div>
-          )}
-          <Progress value={progressPercentage} className="h-2" />
+        )}
 
-          <div className="flex items-center justify-between text-xs">
-            <span className="terminal-text opacity-70">SOUND</span>
-            <Button
-              type="button"
-              onClick={handleToggleSound}
-              variant={soundEnabled ? "default" : "outline"}
-              className="terminal-button terminal-text px-3 py-1"
-            >
-              {soundEnabled ? "ON" : "OFF"}
-            </Button>
-          </div>
-        </div>
+        <Progress value={progressPercentage} className="h-1.5" />
 
-        <div className="terminal-text text-xs opacity-60 text-center space-y-1">
-          <div>← → ↑ ↓ Arrow keys for navigation</div>
-          <div>Type number + Enter to jump to move (e.g. 25)</div>
-          <div>Home/End for start/end • Esc to cancel</div>
+        <div className="flex items-center justify-between text-xs">
+          <span className="terminal-text opacity-70 font-mono">
+            {String(moveIndex).padStart(2, "0")}/
+            {String(Math.max(0, moves.length)).padStart(2, "0")}
+          </span>
+          <Button
+            type="button"
+            onClick={handleToggleSound}
+            variant={soundEnabled ? "default" : "outline"}
+            size="sm"
+            className="terminal-button terminal-text text-xs font-mono px-2 py-1 h-6"
+          >
+            🔊 {soundEnabled ? "ON" : "OFF"}
+          </Button>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+
+      <div className="terminal-text text-[10px] opacity-60 text-center">
+        <div>← → Arrow keys • Type number + Enter</div>
+        <div>Home/End • Esc to cancel</div>
+      </div>
+    </div>
   );
 }

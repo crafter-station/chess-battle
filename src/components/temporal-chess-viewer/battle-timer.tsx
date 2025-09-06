@@ -4,8 +4,6 @@ import * as React from "react";
 
 import type { GameEndReason } from "@/lib/game-end-reason";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-
 interface BattleTimerProps {
   battle: {
     created_at: string;
@@ -123,46 +121,40 @@ export function BattleTimer({ battle, moves }: BattleTimerProps) {
   const status = getTimerStatus();
 
   return (
-    <Card className="terminal-card terminal-border">
-      <CardHeader>
-        <CardTitle className="terminal-text text-sm">BATTLE_TIMER</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        <div className="text-center">
-          <div className="terminal-text text-2xl terminal-glow font-mono">
-            {formatDuration(elapsedSeconds)}
-          </div>
-          <div className={`terminal-text text-sm ${status.color}`}>
-            {status.text}
-          </div>
-          {status.description && (
-            <div className="terminal-text text-xs opacity-70 mt-1">
-              {status.description}
-            </div>
-          )}
-        </div>
+    <div className="space-y-3">
+      <div className="terminal-text text-xs terminal-glow font-mono opacity-70">
+        BATTLE_TIMER
+      </div>
 
-        <div className="space-y-1 font-mono text-xs">
-          <div className="flex justify-between">
-            <span className="terminal-text opacity-70">STARTED:</span>
-            <span className="terminal-text">
-              {new Date(startTime).toLocaleTimeString()}
-            </span>
+      <div className="text-center">
+        <div className="terminal-text text-3xl terminal-glow font-mono">
+          {formatDuration(elapsedSeconds)}
+        </div>
+        <div className={`terminal-text text-sm font-mono ${status.color}`}>
+          {status.text}
+        </div>
+        {status.description && (
+          <div className="terminal-text text-xs opacity-70 mt-1">
+            {status.description}
           </div>
-          {isGameEnded && endTime && (
-            <div className="flex justify-between">
-              <span className="terminal-text opacity-70">ENDED:</span>
-              <span className="terminal-text">
-                {new Date(endTime).toLocaleTimeString()}
-              </span>
-            </div>
-          )}
-          <div className="flex justify-between">
-            <span className="terminal-text opacity-70">MOVES:</span>
-            <span className="terminal-text">{moves.length}</span>
+        )}
+      </div>
+
+      <div className="grid grid-cols-2 gap-2 font-mono text-xs">
+        <div className="terminal-border rounded p-2 bg-black/20">
+          <div className="terminal-text opacity-70">STARTED:</div>
+          <div className="terminal-text">
+            {new Date(startTime).toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            })}
           </div>
         </div>
-      </CardContent>
-    </Card>
+        <div className="terminal-border rounded p-2 bg-black/20">
+          <div className="terminal-text opacity-70">MOVES:</div>
+          <div className="terminal-text">{moves.length}</div>
+        </div>
+      </div>
+    </div>
   );
 }

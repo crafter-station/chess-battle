@@ -369,7 +369,7 @@ export function ChessBoard() {
     <Card
       className={`terminal-card terminal-border p-4 ${gameOverInfo?.over ? "ring-2 ring-yellow-400/50" : ""}`}
     >
-      <div className="w-full max-w-md relative">
+      <div className="w-full h-full relative">
         <Chessboard
           key={position}
           options={{

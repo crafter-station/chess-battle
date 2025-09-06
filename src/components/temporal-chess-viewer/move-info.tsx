@@ -6,7 +6,6 @@ import * as React from "react";
 import { Chess } from "chess.js";
 
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -40,147 +39,147 @@ export function MoveInfo() {
 
   if (!currentMove) {
     return (
-      <Card className="terminal-card terminal-border">
-        <CardHeader>
-          <CardTitle className="terminal-text text-sm">LAST_MOVE</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="text-center">
-            <div className="terminal-text text-xl terminal-glow">START</div>
+      <div className="space-y-2">
+        <div className="terminal-text text-xs terminal-glow font-mono opacity-70">
+          LAST_MOVE
+        </div>
+        <div className="text-center">
+          <div className="terminal-text text-xl terminal-glow font-mono">
+            START
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     );
   }
 
   return (
-    <Card className="terminal-card terminal-border">
-      <CardHeader>
-        <CardTitle className="terminal-text text-sm">LAST_MOVE</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        <div className="text-center">
-          <div className="terminal-text text-xl terminal-glow">
-            {moveIndex === 0
-              ? "START"
-              : `MOVE_${moveIndex.toString().padStart(2, "0")}`}
-          </div>
-          <div className="terminal-text text-sm opacity-80">
-            {playerColor === "black" ? "BLACK_PLAYER" : "WHITE_PLAYER"}
-          </div>
-        </div>
+    <div className="space-y-2">
+      <div className="terminal-text text-xs terminal-glow font-mono opacity-70">
+        LAST_MOVE
+      </div>
 
-        <div className="space-y-2 font-mono text-xs">
-          <div className="flex justify-between">
-            <span className="terminal-text opacity-70">COMMAND:</span>
-            <Badge
-              variant={
-                moveIndex === 0
-                  ? "secondary"
-                  : currentMove?.is_valid
-                    ? "default"
-                    : "destructive"
-              }
-              className="terminal-text !text-primary-foreground"
-            >
-              {moveIndex === -1 ? "—" : currentMove?.move}
-            </Badge>
-          </div>
-          <div className="flex justify-between">
-            <span className="terminal-text opacity-70">STATUS:</span>
-            <span
-              className={`terminal-text ${
-                moveIndex === -1
-                  ? "text-foreground"
-                  : currentMove?.is_valid
-                    ? "text-green-400"
-                    : "text-red-400"
-              }`}
-            >
-              {moveIndex === -1
-                ? "READY"
+      <div className="text-center mb-3">
+        <div className="terminal-text text-lg terminal-glow font-mono">
+          {moveIndex === 0
+            ? "START"
+            : `MOVE ${moveIndex.toString().padStart(2, "0")}`}
+        </div>
+        <div className="terminal-text text-xs opacity-80">
+          {playerColor === "black" ? "● BLACK" : "○ WHITE"}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-2 font-mono text-xs">
+        <div className="terminal-border rounded p-2 bg-black/20">
+          <div className="terminal-text opacity-70">COMMAND:</div>
+          <Badge
+            variant={
+              moveIndex === 0
+                ? "secondary"
                 : currentMove?.is_valid
-                  ? "VALID"
-                  : "INVALID"}
-            </span>
-          </div>
-          <div className="flex justify-between">
-            <span className="terminal-text opacity-70">POSITION:</span>
-            <span className="terminal-text">
-              {moveIndex}/{Math.max(0, moves.length - 1)}
-            </span>
-          </div>
-          {currentMove?.tokens_in && (
-            <div className="flex justify-between">
-              <span className="terminal-text opacity-70">TOKENS_IN:</span>
-              <span className="terminal-text">{currentMove?.tokens_in}</span>
-            </div>
-          )}
-          {currentMove?.tokens_out && (
-            <div className="flex justify-between">
-              <span className="terminal-text opacity-70">TOKENS_OUT:</span>
-              <span className="terminal-text">{currentMove.tokens_out}</span>
-            </div>
-          )}
-          {typeof currentMove?.confidence === "number" && (
-            <div className="flex justify-between">
-              <span className="terminal-text opacity-70">CONFIDENCE:</span>
-              <span className="terminal-text">{currentMove.confidence}%</span>
-            </div>
-          )}
-          {currentMove?.response_time && (
-            <div className="flex justify-between">
-              <span className="terminal-text opacity-70">RESPONSE_TIME:</span>
-              <span className="terminal-text">
-                {currentMove.response_time}ms
-              </span>
-            </div>
-          )}
-
-          {currentMove?.reasoning && (
-            <div className="mt-2 p-2 rounded border border-dashed border-[var(--border)] bg-[var(--card)]/50">
-              <div className="terminal-text text-[10px] opacity-70 mb-1">
-                RATIONALE
-              </div>
-              <div className="terminal-text text-xs opacity-80 line-clamp-3">
-                {currentMove?.reasoning}
-              </div>
-            </div>
-          )}
-
-          {currentMove?.raw_response && (
-            <Dialog>
-              <DialogTrigger asChild>
-                <button
-                  type="button"
-                  className="mt-2 w-full p-2 rounded border border-dashed border-[var(--border)] bg-[var(--card)]/50 hover:bg-[var(--card)]/70 transition-colors text-left"
-                >
-                  <div className="terminal-text text-[10px] opacity-70 mb-1">
-                    RAW_RESPONSE
-                  </div>
-                  <div className="terminal-text text-xs opacity-80 truncate">
-                    {currentMove.raw_response.substring(0, 100)}
-                    {currentMove.raw_response.length > 100 ? "..." : ""}
-                  </div>
-                  <div className="terminal-text text-[10px] opacity-50 mt-1">
-                    Click to view full response
-                  </div>
-                </button>
-              </DialogTrigger>
-              <DialogContent className="max-w-4xl max-h-[80vh] overflow-auto">
-                <DialogHeader>
-                  <DialogTitle className="terminal-text">
-                    RAW_RESPONSE
-                  </DialogTitle>
-                </DialogHeader>
-                <pre className="terminal-text text-sm whitespace-pre-wrap break-words bg-[var(--card)]/50 p-4 rounded border">
-                  {currentMove.raw_response}
-                </pre>
-              </DialogContent>
-            </Dialog>
-          )}
+                  ? "default"
+                  : "destructive"
+            }
+            className="text-xs font-mono mt-1"
+          >
+            {moveIndex === -1 ? "—" : currentMove?.move}
+          </Badge>
         </div>
-      </CardContent>
-    </Card>
+        <div className="terminal-border rounded p-2 bg-black/20">
+          <div className="terminal-text opacity-70">STATUS:</div>
+          <div
+            className={`terminal-text font-mono mt-1 ${
+              moveIndex === -1
+                ? "text-foreground"
+                : currentMove?.is_valid
+                  ? "text-green-400"
+                  : "text-red-400"
+            }`}
+          >
+            {moveIndex === -1
+              ? "READY"
+              : currentMove?.is_valid
+                ? "VALID"
+                : "INVALID"}
+          </div>
+        </div>
+        <div className="terminal-border rounded p-2 bg-black/20">
+          <div className="terminal-text opacity-70">POSITION:</div>
+          <div className="terminal-text font-mono mt-1">
+            {moveIndex}/{Math.max(0, moves.length - 1)}
+          </div>
+        </div>
+        {currentMove?.tokens_in && (
+          <div className="terminal-border rounded p-2 bg-black/20">
+            <div className="terminal-text opacity-70">TOKENS_IN:</div>
+            <div className="terminal-text font-mono mt-1">
+              {currentMove.tokens_in}
+            </div>
+          </div>
+        )}
+        {currentMove?.tokens_out && (
+          <div className="terminal-border rounded p-2 bg-black/20">
+            <div className="terminal-text opacity-70">TOKENS_OUT:</div>
+            <div className="terminal-text font-mono mt-1">
+              {currentMove.tokens_out}
+            </div>
+          </div>
+        )}
+        {typeof currentMove?.confidence === "number" && (
+          <div className="terminal-border rounded p-2 bg-black/20">
+            <div className="terminal-text opacity-70">CONFIDENCE:</div>
+            <div className="terminal-text font-mono mt-1">
+              {currentMove.confidence}%
+            </div>
+          </div>
+        )}
+        {currentMove?.response_time && (
+          <div className="terminal-border rounded p-2 bg-black/20">
+            <div className="terminal-text opacity-70">RESPONSE_TIME:</div>
+            <div className="terminal-text font-mono mt-1">
+              {currentMove.response_time}ms
+            </div>
+          </div>
+        )}
+      </div>
+
+      {currentMove?.reasoning && (
+        <div className="terminal-border rounded p-2 bg-black/20">
+          <div className="terminal-text text-[10px] opacity-70 mb-1 font-mono">
+            RATIONALE
+          </div>
+          <div className="terminal-text text-xs opacity-80 line-clamp-3">
+            {currentMove.reasoning}
+          </div>
+        </div>
+      )}
+
+      {currentMove?.raw_response && (
+        <Dialog>
+          <DialogTrigger asChild>
+            <button
+              type="button"
+              className="w-full terminal-border rounded p-2 bg-black/20 hover:bg-black/30 transition-colors text-left"
+            >
+              <div className="terminal-text text-[10px] opacity-70 mb-1 font-mono">
+                RAW_RESPONSE
+              </div>
+              <div className="terminal-text text-xs opacity-80 truncate">
+                {currentMove.raw_response.substring(0, 50)}
+                {currentMove.raw_response.length > 50 ? "..." : ""}
+              </div>
+            </button>
+          </DialogTrigger>
+          <DialogContent className="max-w-4xl max-h-[80vh] overflow-auto">
+            <DialogHeader>
+              <DialogTitle className="terminal-text">RAW_RESPONSE</DialogTitle>
+            </DialogHeader>
+            <pre className="terminal-text text-sm whitespace-pre-wrap break-words bg-[var(--card)]/50 p-4 rounded border">
+              {currentMove.raw_response}
+            </pre>
+          </DialogContent>
+        </Dialog>
+      )}
+    </div>
   );
 }

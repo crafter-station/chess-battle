@@ -10,6 +10,10 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: "https",
+        hostname: "assets.vercel.com",
+      },
+      {
+        protocol: "https",
         hostname: "avatars.githubusercontent.com",
       },
     ],

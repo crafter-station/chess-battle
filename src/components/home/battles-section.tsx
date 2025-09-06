@@ -120,7 +120,7 @@ export function BattlesSection({
       <CardContent>
         {battles === undefined ? (
           <BattleSkeleton keyPrefix="battle-skel-inline" />
-        ) : battles.length === 0 ? (
+        ) : !battles || battles.length === 0 ? (
           battlesEmptyReady ? (
             <div className="terminal-text text-center py-8 opacity-60">
               &gt; No battles found. Create your first AI chess battle above.

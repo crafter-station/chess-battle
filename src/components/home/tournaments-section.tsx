@@ -70,7 +70,7 @@ export function TournamentsSection({
       <CardContent>
         {tournaments === undefined ? (
           <TournamentSkeleton keyPrefix="tournament-skel-inline" />
-        ) : tournaments.length === 0 ? (
+        ) : !tournaments || tournaments.length === 0 ? (
           tournamentsEmptyReady ? (
             <div className="terminal-text text-center py-8 opacity-60">
               &gt; No tournaments found.{" "}

@@ -61,53 +61,116 @@ export async function GET() {
         externalId: user.id,
       });
     } catch (error) {
-      if (error instanceof Error) {
-        if (error.message.includes("Not found")) {
-          const createdCustomer = await polar.customers.create({
-            externalId: user.id,
-            email: user.emailAddresses[0].emailAddress,
-            name: user.fullName,
-          });
+      console.error("Failed to get customer from Polar:", error);
 
-          customer = await polar.customers.getState({
-            id: createdCustomer.id,
-          });
+      if (error instanceof Error) {
+        // Handle authentication errors
+        if (
+          error.message.includes("invalid_token") ||
+          error.message.includes("401")
+        ) {
+          return new Response(
+            JSON.stringify({
+              success: false,
+              error: "Payment system temporarily unavailable",
+              detail:
+                "Authentication error with payment provider. Please try again later.",
+            } satisfies CustomerResult),
+            {
+              status: 503, // Service Unavailable
+            },
+          );
         }
-      } else {
-        throw error;
+
+        // Try to create customer if not found
+        if (error.message.includes("Not found")) {
+          try {
+            const createdCustomer = await polar.customers.create({
+              externalId: user.id,
+              email: user.emailAddresses[0].emailAddress,
+              name: user.fullName,
+            });
+
+            customer = await polar.customers.getState({
+              id: createdCustomer.id,
+            });
+          } catch (createError) {
+            console.error("Failed to create customer:", createError);
+            return new Response(
+              JSON.stringify({
+                success: false,
+                error: "Failed to create customer account",
+                detail:
+                  "Unable to initialize payment account. Please try again later.",
+              } satisfies CustomerResult),
+              {
+                status: 503,
+              },
+            );
+          }
+        }
+      }
+
+      // If we still don't have a customer after all attempts
+      if (!customer) {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: "Customer service unavailable",
+            detail: "Unable to access customer data. Please try again later.",
+          } satisfies CustomerResult),
+          {
+            status: 503,
+          },
+        );
       }
     }
 
     if (!customer) {
-      throw new Error("Customer not found");
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "Customer not found",
+          detail: "Unable to retrieve customer information.",
+        } satisfies CustomerResult),
+        {
+          status: 404,
+        },
+      );
     }
 
-    const freeBenefits = await polar.benefits.list({
-      query: FREE_BENEFIT_NAME,
-    });
-    const freeBenefit = freeBenefits.result.items[0];
-
-    const freeBenefitGranted = customer.grantedBenefits.some(
-      (benefit) => benefit.benefitId === freeBenefit.id,
-    );
-
-    const metersList = await polar.meters.list({
-      query: "Moves",
-    });
-
+    let freeBenefitGranted = false;
     const meters: { id: string; name: string; balance: number }[] = [];
 
-    for (const meter of metersList.result.items) {
-      const meterData = customer.activeMeters.find(
-        (m) => m.meterId === meter.id,
+    try {
+      const freeBenefits = await polar.benefits.list({
+        query: FREE_BENEFIT_NAME,
+      });
+      const freeBenefit = freeBenefits.result.items[0];
+
+      freeBenefitGranted = customer.grantedBenefits.some(
+        (benefit) => benefit.benefitId === freeBenefit.id,
       );
-      if (meterData) {
-        meters.push({
-          id: meter.id,
-          name: meter.name,
-          balance: meterData.balance,
-        });
+
+      const metersList = await polar.meters.list({
+        query: "Moves",
+      });
+
+      for (const meter of metersList.result.items) {
+        const meterData = customer.activeMeters.find(
+          (m) => m.meterId === meter.id,
+        );
+        if (meterData) {
+          meters.push({
+            id: meter.id,
+            name: meter.name,
+            balance: meterData.balance,
+          });
+        }
       }
+    } catch (error) {
+      console.error("Failed to fetch benefits/meters from Polar:", error);
+      // Continue with empty data rather than failing completely
     }
 
     return new Response(

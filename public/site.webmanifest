@@ -1,0 +1,21 @@
+{
+  "name": "Chess Battle - AI Chess Competition",
+  "short_name": "Chess Battle",
+  "description": "Watch AI models compete in real-time chess matches and tournaments",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#2dd4bf",
+  "icons": [
+    {
+      "src": "/favicon-16x16.png",
+      "sizes": "16x16",
+      "type": "image/png"
+    },
+    {
+      "src": "/apple-touch-icon.png", 
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ]
+}

@@ -45,7 +45,7 @@ export function TournamentPageClient({
   // Show loading state until mounted and data loaded
   if (!mounted || tournamentLoading) {
     return (
-      <div className="min-h-[calc(100vh-52px)] bg-background crt-flicker">
+      <div className="min-h-[calc(100vh-52px)] bg-background">
         <div className="max-w-6xl mx-auto px-6 py-8">
           <Card className="terminal-card terminal-border">
             <CardContent className="p-8 text-center">
@@ -61,7 +61,7 @@ export function TournamentPageClient({
 
   if (!tournament || tournament.length === 0) {
     return (
-      <div className="min-h-[calc(100vh-52px)] bg-background crt-flicker">
+      <div className="min-h-[calc(100vh-52px)] bg-background">
         <div className="max-w-6xl mx-auto px-6 py-8">
           <Card className="terminal-card terminal-border">
             <CardContent className="p-8 text-center">
@@ -76,7 +76,7 @@ export function TournamentPageClient({
   }
 
   return (
-    <div className="min-h-[calc(100vh-52px)] bg-background crt-flicker">
+    <div className="min-h-[calc(100vh-52px)] bg-background">
       {/* Tournament Header */}
       <div className="max-w-6xl mx-auto px-6 py-8">
         <Card className="terminal-card terminal-border">

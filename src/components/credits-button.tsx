@@ -17,10 +17,32 @@ import {
 } from "./ui/dropdown-menu";
 
 export function CreditsButton() {
-  const { data: customer, isLoading } = useCustomer();
+  const { data: customer, isLoading, error } = useCustomer();
 
-  if (!customer) {
-    return null;
+  if (isLoading) {
+    return (
+      <Button
+        variant="outline"
+        size="sm"
+        className="terminal-border bg-terminal-card px-3 py-1.5 rounded text-xs hover:bg-terminal-card/80 transition-colors terminal-text"
+        disabled
+      >
+        Loading...
+      </Button>
+    );
+  }
+
+  if (error || !customer) {
+    return (
+      <Button
+        variant="outline"
+        size="sm"
+        className="terminal-border bg-terminal-card px-3 py-1.5 rounded text-xs hover:bg-terminal-card/80 transition-colors terminal-text"
+        asChild
+      >
+        <Link href="/checkout">Get Credits</Link>
+      </Button>
+    );
   }
 
   // Helper function to get meter balance by tier

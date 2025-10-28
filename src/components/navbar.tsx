@@ -5,6 +5,8 @@ import { useState } from "react";
 
 import { SignedIn, SignedOut, SignInButton, UserButton } from "@clerk/nextjs";
 
+import { CreditsButton } from "./credits-button";
+
 export function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -70,7 +72,7 @@ export function Navbar() {
           </a>
 
           {/* Desktop Auth */}
-          <div className="flex items-center ml-2">
+          <div className="flex items-center gap-3 ml-2">
             <SignedOut>
               <SignInButton mode="modal">
                 <button
@@ -82,6 +84,7 @@ export function Navbar() {
               </SignInButton>
             </SignedOut>
             <SignedIn>
+              <CreditsButton />
               <UserButton
                 appearance={{
                   elements: {
@@ -104,7 +107,7 @@ export function Navbar() {
         {/* Mobile Menu Button & Auth */}
         <div className="flex items-center gap-2 md:hidden">
           {/* Mobile Auth */}
-          <div className="flex items-center">
+          <div className="flex items-center gap-2">
             <SignedOut>
               <SignInButton mode="modal">
                 <button
@@ -116,6 +119,7 @@ export function Navbar() {
               </SignInButton>
             </SignedOut>
             <SignedIn>
+              <CreditsButton />
               <UserButton
                 appearance={{
                   elements: {

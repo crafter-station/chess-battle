@@ -1,0 +1,140 @@
+# Chess Battle - AI Chess Competition Platform
+
+## Overview
+Chess Battle is a real-time AI chess competition platform where cutting-edge language models compete against each other in chess matches and tournaments. Winner of the Global AI Gateway Hackathon 2024.
+
+## Key Features
+- Real-time chess battles between AI models
+- 70+ AI models from major providers (OpenAI, Anthropic, Google, etc.)
+- Live tournament system with bracket generation
+- ELO rating system for AI model performance tracking
+- Real-time spectator mode with move-by-move commentary
+- Advanced AI model comparison and analytics
+- Tournament leaderboards and statistics
+
+## AI Models Supported
+### LITE Tier (Fast, Cost-Effective)
+- GPT-4o Mini
+- Claude 3.5 Haiku
+- Gemini 1.5 Flash
+- Llama 3.1 8B
+- Qwen 2.5 7B
+
+### PRO Tier (Balanced Performance)
+- GPT-4o
+- Claude 3.5 Sonnet
+- Gemini 1.5 Pro
+- Llama 3.1 70B
+- Qwen 2.5 72B
+
+### PRIME Tier (Maximum Performance)
+- GPT-o1 Preview
+- GPT-o1 Mini
+- Claude 3 Opus
+- Gemini 1.5 Pro Experimental
+
+## Technical Architecture
+- **Frontend**: Next.js 15 with React 19, TypeScript
+- **Backend**: Trigger.dev v4 for background job processing
+- **Database**: PostgreSQL with Drizzle ORM
+- **Real-time**: Electric SQL for live data synchronization
+- **Chess Engine**: Chess.js for game logic and move validation
+- **Authentication**: Clerk for user management
+- **Styling**: Tailwind CSS v4 with terminal theme
+- **UI Components**: Shadcn UI library
+- **Animation**: Motion (Framer Motion) for smooth transitions
+- **Payment**: Polar integration for credit system
+- **Analytics**: Vercel Analytics
+- **Deployment**: Vercel hosting
+
+## How It Works
+1. **Battle Creation**: Users select two AI models and configure game parameters
+2. **Move Generation**: AI models receive chess position (FEN) and game context
+3. **Move Validation**: Chess.js validates all moves for legality
+4. **Real-time Updates**: Electric SQL syncs game state across all clients
+5. **ELO Calculation**: Performance ratings updated after each game
+6. **Tournament Management**: Automated bracket generation and progression
+
+## Game Mechanics
+- Standard chess rules (FIDE compliant)
+- Configurable time limits per move (default: 30 seconds)
+- Invalid move penalties and fallback systems
+- Draw detection (stalemate, insufficient material, repetition)
+- Comprehensive game state tracking
+
+## API Integration
+### AI Model Interface
+- Structured prompts with game context
+- JSON and streaming response modes
+- Token usage tracking
+- Response time monitoring
+- Error handling and fallback strategies
+
+### Real-time Features
+- WebSocket connections for live updates
+- Server-sent events for move streaming
+- Optimistic UI updates
+- Conflict resolution
+
+## User Experience
+- **Spectators**: Watch live games with move history and analysis
+- **Tournament Viewers**: Follow bracket progression and statistics  
+- **Model Researchers**: Compare AI model chess performance
+- **Chess Enthusiasts**: Observe high-level AI chess gameplay
+
+## Performance Optimization
+- Edge runtime deployment
+- Database connection pooling
+- Efficient SQL queries with joins
+- Client-side caching strategies
+- Progressive loading for large datasets
+
+## Accessibility Features
+- Removed seizure-inducing flicker effects
+- Keyboard navigation support
+- Screen reader compatible
+- High contrast terminal theme
+- Responsive design for all devices
+
+## Awards and Recognition
+- Winner: Global AI Gateway Hackathon 2024
+- Featured project on Vercel
+- Open source chess AI platform
+
+## Use Cases
+- AI model performance benchmarking
+- Chess AI research and development
+- Educational tool for understanding AI capabilities
+- Entertainment and competitive AI gaming
+- Machine learning model comparison
+
+## Target Audience
+- AI researchers and developers
+- Chess enthusiasts and players
+- Machine learning practitioners  
+- Educational institutions
+- Technology companies evaluating AI models
+
+## Getting Started
+1. Visit https://chess-battle.vercel.app
+2. Sign in to access full features
+3. Select AI models for battle
+4. Configure game parameters
+5. Watch real-time chess competition
+6. View statistics and leaderboards
+
+## Technical Requirements
+- Modern web browser with JavaScript enabled
+- Internet connection for real-time features
+- Account creation for full functionality
+- Credits system for AI model usage
+
+## Open Source
+Built by Crafter Station as an open-source project demonstrating advanced AI integration, real-time web technologies, and modern full-stack development practices.
+
+Repository: https://github.com/crafter-station/chess-battle
+Live Demo: https://chess-battle.vercel.app
+Documentation: Available in repository
+
+## Contact
+For technical questions, collaborations, or AI model integrations, visit our GitHub repository or contact Crafter Station.

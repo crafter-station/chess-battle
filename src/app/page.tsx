@@ -13,6 +13,7 @@ import {
   TournamentsCollection,
 } from "@/db/electric";
 
+import { AnimatedBadge } from "@/components/animated-badge";
 import { BattlesSection } from "@/components/home/battles-section";
 import { StatsLine } from "@/components/home/stats-line";
 import { TournamentsSection } from "@/components/home/tournaments-section";
@@ -224,7 +225,7 @@ const BattleSetup = dynamic(() => import("./battle-setup"), {
 
 export default function Page() {
   return (
-    <div className="min-h-[calc(100vh-52px)] bg-background crt-flicker">
+    <div className="min-h-[calc(100vh-52px)] bg-background">
       {/* Hero Section */}
       <div className="relative overflow-hidden">
         <div className="max-w-7xl mx-auto px-6 py-12">
@@ -252,13 +253,18 @@ export default function Page() {
                 </h1>
               </div>
             </div>
-            <p className="terminal-text text-lg opacity-90 max-w-2xl mx-auto">
+            <p className="terminal-text text-lg opacity-90 max-w-2xl mx-auto mb-6">
               Watch cutting-edge AI models battle in real-time chess matches.
               <br />
               <span className="text-primary">70+ models</span> •{" "}
               <span className="text-primary">Live tournaments</span> •{" "}
               <span className="text-primary">ELO rankings</span>
             </p>
+
+            {/* Subtle animated badge */}
+            <div className="flex justify-center">
+              <AnimatedBadge />
+            </div>
           </div>
 
           {/* Battle Setup - Inline */}

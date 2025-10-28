@@ -12,7 +12,7 @@ const TournamentPageClient = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="min-h-[calc(100vh-52px)] bg-background crt-flicker">
+      <div className="min-h-[calc(100vh-52px)] bg-background">
         <div className="max-w-6xl mx-auto px-6 py-8">
           <div className="terminal-card terminal-border p-8 text-center">
             <div className="terminal-text text-lg">

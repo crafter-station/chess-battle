@@ -12,7 +12,7 @@ const TemporalChessViewer = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="h-full bg-background crt-flicker flex items-center justify-center">
+      <div className="h-full bg-background flex items-center justify-center">
         <div className="terminal-text text-lg terminal-glow">
           Loading chess viewer...
         </div>
@@ -23,7 +23,7 @@ const TemporalChessViewer = dynamic(
 
 export default function Page() {
   return (
-    <div className="h-[calc(100vh-52px)] lg:h-[calc(100vh-52px)] bg-background crt-flicker flex flex-col overflow-hidden">
+    <div className="h-[calc(100vh-52px)] lg:h-[calc(100vh-52px)] bg-background flex flex-col overflow-hidden">
       {/* Guest Warning Banner */}
       <SignedOut>
         <div className="border-b border-yellow-700/30 bg-yellow-950/20 p-3 flex-shrink-0">

@@ -1,0 +1,25 @@
+User-agent: *
+Allow: /
+
+# AI crawlers and LLM training
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: CCBot
+Allow: /
+
+User-agent: anthropic-ai
+Allow: /
+
+User-agent: Claude-Web
+Allow: /
+
+User-agent: GPTBot
+Allow: /
+
+# Sitemap
+Sitemap: https://chess-battle.vercel.app/sitemap.xml
+
+# LLM information
+# For AI Engine Optimization (AEO)
+# See: https://chess-battle.vercel.app/llm.txt

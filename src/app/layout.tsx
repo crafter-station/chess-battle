@@ -6,7 +6,7 @@ import { ClerkProvider } from "@clerk/nextjs";
 import { Analytics } from "@vercel/analytics/next";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 
-import CrtToggle from "@/components/crt-toggle";
+import { AnnouncementBarWrapper } from "@/components/announcement-bar";
 import { Navbar } from "@/components/navbar";
 import { Providers } from "@/components/providers";
 import { Toaster } from "@/components/ui/sonner";
@@ -36,29 +36,21 @@ export default function RootLayout({
   return (
     <ClerkProvider>
       <html lang="en" suppressHydrationWarning>
-        <head>
-          {/* Prevent flicker on first paint by applying stored preference ASAP */}
-          <script
-            // biome-ignore lint/security/noDangerouslySetInnerHtml: works!
-            dangerouslySetInnerHTML={{
-              __html: `try{if(localStorage.getItem('crt-disabled')==='1'){document.documentElement.classList.add('no-crt')}}catch(e){}`,
-            }}
-          />
-        </head>
+        <head></head>
         <body
           className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased flex flex-col min-h-screen`}
         >
           <Providers>
+            <AnnouncementBarWrapper />
             <MergeOnSignin />
             <Navbar />
             <main className="flex-1">
               <NuqsAdapter>{children}</NuqsAdapter>
             </main>
-            <CrtToggle />
             <Toaster />
           </Providers>
-          
-        <Analytics />
+
+          <Analytics />
         </body>
       </html>
     </ClerkProvider>

@@ -26,7 +26,7 @@ export function AnnouncementBar() {
       {showAnnouncement && (
         <motion.div
           exit={{ height: 0, translateY: -100 }}
-          transition={{ type: "easeOut", duration: 0.25 }}
+          transition={{ ease: "easeOut", duration: 0.25 }}
           className="flex h-10 items-center justify-center bg-terminal-card/90 border-b border-terminal-border backdrop-blur-sm px-4 text-foreground"
         >
           <div className="flex items-center gap-2 text-center text-xs sm:text-sm">

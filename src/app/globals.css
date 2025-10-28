@@ -379,31 +379,4 @@ body {
         inset 0 0 15px rgba(45, 212, 191, 0.2);
     }
   }
-
-  .crt-flicker {
-    animation: flicker 2s infinite alternate;
-  }
-
-  /* Disable CRT flicker when opt-out class is present on the root */
-  html.no-crt .crt-flicker {
-    animation: none !important;
-  }
-
-  @keyframes flicker {
-    0%,
-    19%,
-    21%,
-    23%,
-    25%,
-    54%,
-    56%,
-    100% {
-      opacity: 1;
-    }
-    20%,
-    24%,
-    55% {
-      opacity: 0.4;
-    }
-  }
 }
